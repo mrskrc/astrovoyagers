@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <meta name="theme-color" content="#060a1c">
+  <title>ASTROVOYAGERS · My page</title>
+  <link rel="icon" href="icons/icon32.png">
+  <link rel="apple-touch-icon" href="icons/icon128.png">
+  <link rel="stylesheet" href="portal.css">
+</head>
+<body>
+  <!-- signing in with the code on the voyager's card -->
+  <main class="signin" id="signin">
+    <div class="signin-card">
+      <p class="logo">ASTROVOYAGERS</p>
+      <canvas class="px zib" id="zib" width="26" height="30"></canvas>
+      <p class="bubble" id="hello">Hello, voyager! Type your secret code.</p>
+      <form id="codeForm" autocomplete="off" style="display:grid;gap:12px;width:100%">
+        <label class="eyebrow" for="code">Your code (on your card)</label>
+        <input class="code-in" id="code" name="code" inputmode="text" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="7" placeholder="ABC-123">
+        <label class="check"><input type="checkbox" id="remember" checked> Remember me on this device</label>
+        <button class="btn btn-gold" type="submit" id="go">Open my page</button>
+      </form>
+      <p class="msg" id="signMsg" role="status"></p>
+      <p class="muted small" id="noScript" hidden>Open this page with the link or the QR code from your teacher.</p>
+    </div>
+  </main>
+
+  <!-- the voyager's page -->
+  <div class="wrap" id="app" hidden>
+    <header class="me">
+      <div class="me-art" id="meArt"></div>
+      <div class="me-tx">
+        <p class="eyebrow" id="meClass"></p>
+        <h1 id="meName"></h1>
+        <span class="title-chip" id="meTitle"></span>
+        <div class="lv"><span id="meLv"></span><span class="bar"><i id="meBar"></i></span></div>
+      </div>
+      <div class="wallet">
+        <small>Star Coins</small>
+        <b id="meCoins">✦ 0</b>
+        <button class="btn btn-ghost out-btn" type="button" id="signOut">Sign out</button>
+      </div>
+    </header>
+    <nav class="tabs" role="tablist" aria-label="My page" id="tabs"></nav>
+    <section class="page" id="page"></section>
+  </div>
+
+  <dialog class="sheet" id="sheet" aria-labelledby="shName"></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+
+  <script src="shared/creatures.js"></script>
+  <script src="shared/lore.js"></script>
+  <script src="shared/shopdata.js"></script>
+  <script src="shared/shopart.js"></script>
+  <script src="shared/portalkit.js"></script>
+  <script src="portal.js"></script>
+</body>
+</html>
