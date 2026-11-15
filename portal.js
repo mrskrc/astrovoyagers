@@ -48,7 +48,7 @@
   let sent = [];      // requests sent from this device, not seen in the script yet
   let tab = 'home', tick = 0;
 
-  const EQUIP = ['hull', 'wing', 'engine', 'paint', 'decal', 'trail', 'hat', 'cape', 'aura', 'buddy', 'frame', 'title', 'wall', 'floor', 'window', 'bed', 'desk', 'lamp', 'plant', 'shelf', 'poster', 'rug', 'gadget'];
+  const EQUIP = ['hull', 'wing', 'engine', 'paint', 'decal', 'trail', 'hat', 'cape', 'aura', 'buddy', 'frame', 'title', 'wall', 'floor', 'window', 'bed', 'desk', 'lamp', 'plant', 'shelf', 'poster', 'rug', 'gadget', 'face', 'neck', 'hold', 'pet', 'ceiling'];
   const equipable = it => EQUIP.includes(it.slot);
   const owns = (v, it) => it.rarity === 'starter' || v.own.includes(it.id);
   const wearing = (v, it) => equipable(it) && (v.eq[it.slot] === it.id || (!v.eq[it.slot] && D.STARTER[it.slot] === it.id));
@@ -396,11 +396,12 @@
   }
 
   // ---------- the Star Bazaar ----------
-  let shop = 'ship', group = {}, openId = null, talk = null;
-  const homeOf = it => (it.shop === 'vault' ? ({ hull: 'ship', wing: 'ship', engine: 'ship', paint: 'ship', decal: 'ship', trail: 'ship', hat: 'wear', cape: 'wear', aura: 'wear', buddy: 'wear', frame: 'profile', title: 'profile' }[it.slot] || 'cabin') : it.shop);
+  let shop = 'ship', group = {}, openId = null, talk = null, shopView = 'all';
+  const SHIP = D.SHIP_SLOTS || ['hull', 'wing', 'engine', 'paint', 'decal', 'trail'], WEAR = D.WEAR_SLOTS || ['hat', 'cape', 'aura', 'buddy'];
+  const CABIN = D.CABIN_SLOTS || ['wall', 'floor', 'window', 'bed', 'desk', 'lamp', 'plant', 'shelf', 'poster', 'rug', 'gadget'];
+  const homeOf = it => (it.shop !== 'vault' ? it.shop : SHIP.includes(it.slot) ? 'ship' : WEAR.includes(it.slot) ? 'wear' : it.slot === 'frame' || it.slot === 'title' ? 'profile' : 'cabin');
   const useWord = it => ({ ship: 'On your ship', wear: 'Wearing it', cabin: 'In your cabin', profile: 'On your card' }[homeOf(it)] || 'Yours');
   const pickEq = (o, keys) => { const r = {}; keys.forEach(k => { if (o[k]) r[k] = o[k]; }); return r; };
-  const SHIP = ['hull', 'wing', 'engine', 'paint', 'decal', 'trail'], WEAR = ['hat', 'cape', 'aura', 'buddy'], CABIN = ['wall', 'floor', 'window', 'bed', 'desk', 'lamp', 'plant', 'shelf', 'poster', 'rug', 'gadget'];
   function itemsOf(sh, g) {
     if (sh.key === 'vault') return D.items.filter(i => i.shop === 'vault');
     if (g.startsWith('set:')) return D.items.filter(i => i.set === g.slice(4));
@@ -419,9 +420,20 @@
       head.appendChild(gc);
     }
     if (sh.key === 'vault') head.appendChild(el('p', 'muted small', 'One of a kind: each treasure has one owner in your class, and each voyager can own one.'));
+    const all = itemsOf(sh, g);
+    if (all.length >= 8) {
+      const fc = el('div', 'chips'); fc.style.marginTop = '10px';
+      [['all', 'All'], ['can', 'I can buy'], ['new', 'New'], ['cheap', 'Cheapest first']].forEach(([k, name]) => { const b = el('button', 'chip', name); b.type = 'button'; b.setAttribute('aria-pressed', String(k === shopView)); b.addEventListener('click', () => { shopView = k; render(); }); fc.appendChild(b); });
+      head.appendChild(fc);
+    }
     page.appendChild(head);
     const grid = el('div', 'grid');
-    itemsOf(sh, g).forEach(it => grid.appendChild(tile(v, it)));
+    let list = all;
+    if (shopView === 'can') list = all.filter(it => !owns(v, it) && !block(v, it));
+    else if (shopView === 'new') list = all.filter(it => it.nu);
+    else if (shopView === 'cheap') list = all.slice().sort((a, b) => a.price - b.price);
+    list.forEach(it => grid.appendChild(tile(v, it)));
+    if (!list.length) grid.appendChild(el('p', 'muted', shopView === 'can' ? 'Nothing here you can buy now. Earn more Star Coins!' : 'Nothing new here.'));
     page.appendChild(grid);
   }
   function thumbInto(box, it, v) {
@@ -436,6 +448,7 @@
     b.type = 'button';
     const th = el('div', 'thumb'); thumbInto(th, it, v);
     if (v.wish.includes(it.id) && !own) th.appendChild(el('span', 'heart', '♥'));
+    else if (it.nu && !own) th.appendChild(el('span', 'newtag', 'New'));
     let st;
     if (pend) st = 'On its way';
     else if (own) st = on ? useWord(it) : it.shop === 'cards' ? 'In your collection' : 'Owned';

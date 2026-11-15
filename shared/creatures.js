@@ -469,6 +469,8 @@
     });
     const mRows = MOUTHS[c.mouth][stage - 1];
     const my = eyeY + eh + (stage === 1 ? 0 : 1) - (eyeStyle === 'sleepy' ? 1 : 0);
+    // 7.6: where the face and the hands are, for the Star Bazaar's glasses, neckwear and things to hold
+    const geo = { top, bottom, W, H, cyc: Math.round(cyc), eyeY, eyeL: 16 - off - ew, eyeR: 16 + off + ew - 1, eh, mouthY: my + mRows.length, handY: Math.round(cyc + H * 0.14), sideL: leftAt(Math.round(cyc + H * 0.14)) };
     const mx0 = 16 - mRows[0].length / 2;
     mRows.forEach((row, dy) => {
       for (let dx = 0; dx < row.length; dx++) if (row[dx] !== '.') set(mx0 + dx, my + dy, CH[row[dx]]);
@@ -507,9 +509,9 @@
           ring[y * N + x] = ((x * 7 + y * 3) % 11 === 0) ? 'auraHi' : 'aura';
         }
       }
-      return { keys: ring, top };
+      return { keys: ring, top, geo };
     }
-    return { keys: out, top };
+    return { keys: out, top, geo };
   }
 
   function buildEgg() {
@@ -572,6 +574,16 @@
       cache.set(key, out);
     }
     return cache.get(key);
+  }
+  // 7.6: the face of a creature (eyes, mouth, hands) for the Bazaar's clothes. The egg has a made-up one.
+  const geoCache = new Map();
+  const EGG_GEO = { top: 13, bottom: 29, W: 14, H: 17, cyc: 21, eyeY: 18, eyeL: 11, eyeR: 20, eh: 2, mouthY: 22, handY: 23, sideL: 9 };
+  function geometry(id, stage) {
+    if (id == null || !LIST[id]) return EGG_GEO;
+    stage = clamp(stage | 0 || 1, 1, 3);
+    const key = id + ':' + stage;
+    if (!geoCache.has(key)) geoCache.set(key, build(LIST[id], stage, {}).geo);
+    return geoCache.get(key);
   }
   const boundsCache = new Map();
   function bounds(id, stage, hat) {
@@ -737,7 +749,7 @@
     return ((h ^ (h >>> 16)) >>> 0) / 4294967296;
   }
 
-  const API = { N, TYPES, TYPE_ORDER, LEGEND, list: LIST, pixels, bounds, draw, sprite, renderSpec, icon, hatPreview, medal, backdrop, phaseNow, typeInfo, hsl, logo, logoPixels };
+  const API = { N, TYPES, TYPE_ORDER, LEGEND, list: LIST, pixels, bounds, geometry, draw, sprite, renderSpec, icon, hatPreview, medal, backdrop, phaseNow, typeInfo, hsl, logo, logoPixels };
   if (typeof module !== 'undefined' && module.exports) module.exports = API;
   root.CQCreatures = API;
 })(typeof self !== 'undefined' ? self : globalThis);

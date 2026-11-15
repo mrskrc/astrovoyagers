@@ -201,3 +201,59 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
 .pinpad button { min-height: 66px; border-radius: 16px; border: 1px solid var(--line-strong); background: linear-gradient(180deg, #1c2858, #121a40); font-family: var(--font-display); font-size: 1.7rem; font-weight: 700; cursor: pointer; }
 .pinpad button.ok { background: linear-gradient(180deg, #8ff5ff, #3fc8ef); color: #04222e; font-size: 1.1rem; }
 .pinpad button.back { color: #ffb0c8; }
+
+/* ---------- 7.6 · the cockpit ----------
+   The same look as Star Base: titles and the main buttons in Orbitron capitals, buttons and chips with
+   cut corners and a thin neon rim, HUD labels in small letter-spaced capitals. Names stay in Exo 2. */
+@font-face { font-family: "Orbitron"; font-weight: 700; font-display: swap; src: url(fonts/orbitron-latin-700-normal.woff2) format("woff2"); }
+:root { --font-hud: "Orbitron", "Exo 2", system-ui, sans-serif; --neon: #7ff0ff; --cut-clip: polygon(var(--cut) 0, 100% 0, 100% calc(100% - var(--cut)), calc(100% - var(--cut)) 100%, 0 100%, 0 var(--cut)); }
+.panel > h2, .sheet-head h2:not(#shName), .teacher h1, .teacher h2 { font-family: var(--font-hud); font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; font-size: 1.05rem; color: #e6fbff; text-shadow: 0 0 16px rgba(127, 240, 255, 0.3); }
+.eyebrow, .title-chip, .tprev, .tag, .shop-tab { font-family: var(--font-hud) !important; letter-spacing: 0.12em; text-transform: uppercase; }
+.eyebrow { font-size: 0.66rem !important; font-weight: 700; }
+.tab { font-family: var(--font-display); font-size: 0.7rem; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; }
+.me .eyebrow { letter-spacing: 0.06em; }
+.title-chip { white-space: nowrap; font-size: 0.6rem !important; letter-spacing: 0.06em !important; }
+.wallet b, .price, .result b.big, .stat b { font-family: var(--font-hud) !important; font-weight: 800; }
+.panel, .me { border-radius: 0 !important; --cut: 14px; clip-path: var(--cut-clip); }
+.panel { border-left: 2px solid rgba(127, 240, 255, 0.45) !important; }
+.thumb, .prev, .hangar, .cabin canvas, .me-art, .fprev, .list li, .feedback, .talk, .bubble { border-radius: 0 !important; }
+.btn, .chip, .shop-tab, .opt, .line, .pinpad button, .item, .code-in {
+  --cut: 9px; --rim: rgba(127, 240, 255, 0.55); --face: linear-gradient(180deg, rgba(127, 240, 255, 0.13), rgba(127, 240, 255, 0.03)), #0d1540; --fg: #dff9ff;
+  --cornerA: calc(var(--cut) * 0.7071 + 1.3px);
+  border: 0 !important; border-radius: 0 !important; clip-path: var(--cut-clip);
+  background:
+    linear-gradient(135deg, var(--rim) 0 var(--cornerA), transparent var(--cornerA)) top left / calc(var(--cut) + 3px) calc(var(--cut) + 3px) no-repeat,
+    linear-gradient(-45deg, var(--rim) 0 var(--cornerA), transparent var(--cornerA)) bottom right / calc(var(--cut) + 3px) calc(var(--cut) + 3px) no-repeat,
+    var(--face) !important;
+  color: var(--fg) !important; box-shadow: inset 0 0 0 1.5px var(--rim) !important;
+}
+.btn { font-family: var(--font-hud); font-weight: 800; font-size: 0.82rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.btn-gold { --rim: #fff3c4; --face: linear-gradient(180deg, #ffe48a, #f4a524); --fg: #2b1a00; }
+.btn-cyan { --rim: #e6fdff; --face: linear-gradient(180deg, #c4faff, #3fc8ef); --fg: #04222e; }
+.btn-ghost { --rim: rgba(127, 240, 255, 0.32); --face: rgba(8, 14, 44, 0.55); --fg: #bff8ff; }
+.chip { --cut: 6px; --rim: rgba(127, 240, 255, 0.4); --face: rgba(10, 20, 54, 0.88); --fg: #bff8ff; }
+.chip[aria-pressed="true"] { --rim: #bff8ff; --face: linear-gradient(180deg, rgba(127, 240, 255, 0.42), rgba(63, 200, 239, 0.22)), #0d2a4a; --fg: #fff; }
+.shop-tab { --cut: 8px; --rim: rgba(127, 140, 220, 0.45); font-size: 0.72rem; font-weight: 700; }
+.shop-tab[aria-selected="true"] { --rim: #ffe48a; --face: linear-gradient(180deg, rgba(255, 210, 63, 0.28), rgba(58, 45, 11, 0.9)); --fg: #fff3c4; }
+.opt, .line { --cut: 10px; --rim: rgba(127, 140, 220, 0.5); --face: rgba(18, 28, 74, 0.95); }
+.opt.ok, .opt.right { --rim: #6fe3b4; --face: rgba(30, 90, 70, 0.9); }
+.opt.bad, .opt.wrong, .line.wrong { --rim: #ff8a9a; --fg: #ff9aa8; }
+.pinpad button { --cut: 10px; --face: linear-gradient(180deg, #213070, #121a48); font-family: var(--font-hud); }
+.pinpad button.ok { --rim: #e6fdff; --face: linear-gradient(180deg, #c4faff, #3fc8ef); --fg: #04222e; }
+.pinpad button.back { --face: linear-gradient(180deg, #5a2a50, #321630); --rim: #ff9ac8; --fg: #ffd0e2; }
+.code-in { --cut: 12px; --rim: rgba(255, 210, 63, 0.6); --face: rgba(6, 10, 32, 0.92); --fg: #ffe9a8; }
+.item { --cut: 12px; --rim: color-mix(in srgb, var(--rc) 60%, transparent); --face: linear-gradient(180deg, color-mix(in srgb, var(--rc) 12%, #0f1736), #0f1736); --fg: var(--ink); }
+.item.on { --rim: var(--ok); }
+.tab[aria-selected="true"] { border-radius: 0; box-shadow: inset 0 -2px 0 var(--neon); }
+.title-chip, .tprev, .tag { border-radius: 0 !important; }
+/* 7.6: a "New" tag, and the new frames */
+.newtag { position: absolute; top: 6px; left: 8px; padding: 1px 7px; font-family: var(--font-hud); font-size: 0.56rem; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; background: #7ff0ff; color: #04222e; clip-path: polygon(4px 0, 100% 0, 100% calc(100% - 4px), calc(100% - 4px) 100%, 0 100%, 0 4px); }
+.framed[data-frame="brackets"]::after { --fw: 4px; background: linear-gradient(var(--f1) 0 0) top left / 20px 20px no-repeat, linear-gradient(var(--f1) 0 0) top right / 20px 20px no-repeat, linear-gradient(var(--f2) 0 0) bottom left / 20px 20px no-repeat, linear-gradient(var(--f2) 0 0) bottom right / 20px 20px no-repeat; }
+.framed[data-frame="dashed"]::after { --fw: 4px; background: repeating-linear-gradient(45deg, var(--f1) 0 8px, transparent 8px 14px); }
+.framed[data-frame="checker"]::after { --fw: 6px; background: repeating-conic-gradient(var(--f1) 0 25%, var(--f2) 0 50%) 0 0 / 12px 12px; }
+.framed[data-frame="hearts"]::after { --fw: 7px; background: radial-gradient(circle at 35% 40%, var(--f1) 0 2px, transparent 2.6px) 0 0 / 11px 11px, radial-gradient(circle at 65% 40%, var(--f1) 0 2px, transparent 2.6px) 0 0 / 11px 11px, linear-gradient(var(--f2), var(--f2)); }
+.framed[data-frame="flame"]::after { --fw: 6px; background: linear-gradient(0deg, var(--f1), var(--f2)); }
+.framed[data-frame="flame"] { box-shadow: 0 0 20px color-mix(in srgb, var(--f1) 60%, transparent); }
+.framed[data-frame="circuit"]::after { --fw: 5px; background: linear-gradient(90deg, var(--f1) 0 2px, transparent 2px) 0 0 / 14px 100%, linear-gradient(0deg, var(--f1) 0 2px, transparent 2px) 0 0 / 100% 14px, var(--f2); }
+.framed[data-frame="leafy"]::after { --fw: 7px; background: radial-gradient(ellipse 5px 3px at 50% 50%, var(--f1) 85%, transparent 100%) 0 0 / 12px 8px, var(--f2); }
+.framed[data-frame="candy"]::after { --fw: 6px; background: repeating-linear-gradient(45deg, var(--f1) 0 6px, var(--f2) 6px 12px); }
