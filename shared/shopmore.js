@@ -57,6 +57,29 @@
     ['Ice Breaker', 'rare', { len: 32, n: 3, m: 6, t: 4, nose: 'blunt', fin: 4, cp: 0.68, spikes: 1 }, ['#e8f4ff', '#5ab4ff', 'stripes'], 'It breaks through ice comets. Brrr!'],
     ['Cloud Cruiser', 'rare', { len: 30, n: 4, m: 7, t: 5, nose: 'round', fin: 2, cp: 0.6, puffs: 1 }, ['#ffffff', '#bff8ff', 'shine'], 'A soft, white ship. It floats like a cloud.']
   ];
+  // 7.8: hulls with their own silhouette (shopart.js: FORMS)
+  HULLS.push(
+    ['Paper Plane', 'common', { len: 32, m: 3, fin: 0, cp: 0.6, form: 'paperplane', nocp: 1 }, ['#f4f6ff', '#9ad0ff', 'solid'], 'A plane made of paper. Fold it, throw it, fly to the stars!'],
+    ['Pencil Rocket', 'uncommon', { len: 36, m: 3, fin: 0, cp: 0.5, form: 'pencil', nocp: 1 }, ['#ffd23f', '#f0a500', 'solid'], 'A giant pencil. It writes your name across the sky.'],
+    ['School Bus', 'rare', { len: 30, m: 6, fin: 0, cp: 0.5, form: 'bus', nocp: 1 }, ['#ffc21f', '#1d1f2e', 'solid'], 'The space school bus. Next stop: the Moon!'],
+    ['Star Express', 'epic', { len: 32, m: 5, fin: 0, cp: 0.5, form: 'train', nocp: 1 }, ['#c4123a', '#ffd23f', 'solid'], 'A train that runs on rails of starlight. Choo choo!'],
+    ['Star Galleon', 'legendary', { len: 32, m: 5, fin: 0, cp: 0.5, form: 'galleon', nocp: 1 }, ['#8a5a34', '#fff6e0', 'solid'], 'An old sailing ship with sails full of solar wind.'],
+    ['Rubber Duck', 'rare', { len: 26, m: 6, fin: 0, cp: 0.5, form: 'duck', nocp: 1 }, ['#ffd23f', '#ff9a3d', 'solid'], 'Quack! The bravest duck in the bath is now in space.'],
+    ['Space Turtle', 'rare', { len: 28, m: 6, fin: 0, cp: 0.5, form: 'turtle', nocp: 1 }, ['#3f9a4e', '#2a6a35', 'hexes'], 'Slow and steady. This turtle carries its home on its back.'],
+    ['Snail Mail', 'uncommon', { len: 28, m: 5, fin: 0, cp: 0.5, form: 'snail', nocp: 1 }, ['#ff9ad8', '#c2459c', 'solid'], 'It is not the fastest ship, but it always arrives.'],
+    ['Zeppelin', 'epic', { len: 36, m: 7, fin: 0, cp: 0.5, form: 'zeppelin', nocp: 1 }, ['#e8ecf8', '#e5484d', 'band'], 'A big, quiet airship with a little cabin under it.'],
+    ['Carrot Rocket', 'uncommon', { len: 32, m: 6, fin: 0, cp: 0.3, form: 'carrot' }, ['#ff8a3d', '#c45a1a', 'solid'], 'A crunchy rocket. Star Bunny loves this one.'],
+    ['Banana Boat', 'uncommon', { len: 32, m: 4, fin: 0, cp: 0.5, form: 'banana' }, ['#ffe066', '#f0c020', 'solid'], 'A yellow banana that flies. Do not slip!'],
+    ['Rock Guitar', 'epic', { len: 36, m: 6, fin: 0, cp: 0.5, form: 'guitar', nocp: 1 }, ['#e5484d', '#ffffff', 'shine'], 'A flying guitar for the loudest band in the galaxy.'],
+    ['Flying Teapot', 'rare', { len: 24, m: 7, fin: 0, cp: 0.5, form: 'teapot', nocp: 1 }, ['#f4f6ff', '#ff7ad9', 'solid'], 'Time for tea! Steam comes out when it flies.'],
+    ['Super Sneaker', 'rare', { len: 30, m: 6, fin: 0, cp: 0.5, form: 'sneaker', nocp: 1 }, ['#5ab4ff', '#ffd23f', 'solid'], 'A running shoe that runs between the planets.'],
+    ['Cosmo Cat', 'epic', { len: 28, m: 5, fin: 0, cp: 0.5, form: 'cat', nocp: 1 }, ['#ff9a3d', '#ffffff', 'tiger'], 'A ship like a flying cat. It lands on its feet every time.'],
+    ['Golden Key', 'epic', { len: 34, m: 4, fin: 0, cp: 0.5, form: 'key', nocp: 1 }, ['#ffd23f', '#fff6c8', 'shine'], 'The key that opens the door to every galaxy.'],
+    ['Starfish', 'rare', { len: 24, m: 8, fin: 0, cp: 0.5, form: 'star', nocp: 1 }, ['#ffb24a', '#ffe066', 'dots'], 'A ship in the shape of a star. It spins for joy.'],
+    ['Love Bug', 'rare', { len: 22, m: 8, fin: 0, cp: 0.5, form: 'heart', nocp: 1 }, ['#ff5a8a', '#ff9ad8', 'fade'], 'A heart with an engine. It carries kind messages.'],
+    ['Burger Cruiser', 'uncommon', { len: 26, m: 6, fin: 0, cp: 0.5, form: 'burger', nocp: 1 }, ['#e0a050', '#c98a4a', 'solid'], 'A burger as big as a spaceship. Are you hungry?'],
+    ['Drill Digger', 'epic', { len: 32, m: 6, fin: 0, cp: 0.3, form: 'drill', nocp: 1 }, ['#ffb24a', '#3a4766', 'band'], 'It digs through asteroids to find crystals.']
+  );
   let n = next('hull');
   HULLS.forEach(([name, rarity, a, [c1, c2, pattern], desc]) => add({ id: 'hull-' + pad(n++), shop: 'ship', slot: 'hull', name: name + ' Hull', rarity, art: Object.assign(a, { paint: { c1, c2, pattern } }), desc }));
 

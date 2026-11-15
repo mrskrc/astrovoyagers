@@ -1,5 +1,5 @@
 /* ASTROVOYAGERS · creatures
-   50 original pixel space creatures (10 types × 5) plus 10 legendaries, each with three evolution stages,
+   80 original pixel space creatures (10 types × 8) plus 10 legendaries, each with three evolution stages,
    built procedurally on a 32×32 grid. Works in the browser (self.CQCreatures)
    and in Node (module.exports) so the extension icons can be rendered too. */
 (function (root) {
@@ -99,7 +99,39 @@
     ['Nebula', 'moon', 282, 58, 42, 'slime', 'shine', 'smile', 'antenna', 'none', 'spots', 1, [320, 90, 72], 1],
     ['Prism', 'bloom', 300, 40, 86, 'block', 'big', 'cat', 'crystal', 'wings', 'none', 0, [180, 80, 80], 1],
     ['Titanox', 'metal', 212, 24, 40, 'block', 'shine', 'fang', 'horns', 'arms', 'stripes', 0, [45, 90, 56], 1],
-    ['Chronos', 'stone', 40, 45, 50, 'tall', 'sleepy', 'tiny', 'horns', 'wings', 'belly', 0, [48, 95, 62], 1]
+    ['Chronos', 'stone', 40, 45, 50, 'tall', 'sleepy', 'tiny', 'horns', 'wings', 'belly', 0, [48, 95, 62], 1],
+
+    // 7.8: thirty more (three for every type), with new bodies, faces and parts. New ones go at the END: the number is the creature's id.
+    ['Shroomy', 'leaf', 8, 68, 58, 'mushroom', 'dot', 'smile', 'none', 'arms', 'spots', 1],
+    ['Thistle', 'leaf', 150, 42, 50, 'drop', 'lash', 'tiny', 'spikes', 'claws', 'freckles', 0, [300, 60, 70]],
+    ['Bamboo', 'leaf', 100, 50, 60, 'tall', 'oval', 'grin', 'sprout', 'ears', 'half', 0],
+    ['Blaze', 'ember', 8, 85, 56, 'drop', 'star', 'grin', 'flame', 'tail', 'belly', 0],
+    ['Magmo', 'ember', 350, 60, 36, 'gem', 'big', 'fang', 'spikes', 'claws', 'spots', 0, [40, 100, 60]],
+    ['Toasty', 'ember', 32, 70, 66, 'cloud', 'happy', 'tongue', 'puff', 'arms', 'freckles', 1, [20, 90, 60]],
+    ['Bubbles', 'tide', 180, 60, 70, 'cloud', 'oval', 'o', 'antenna', 'fins', 'belly', 1],
+    ['Squidly', 'tide', 300, 45, 66, 'ghost', 'big', 'tiny', 'fin', 'tentacles', 'spots', 0],
+    ['Clawdia', 'tide', 5, 70, 58, 'round', 'dot', 'smile', 'antenna', 'claws', 'belly', 0, [5, 80, 50]],
+    ['Twinkle', 'spark', 52, 95, 66, 'star', 'happy', 'smile', 'none', 'none', 'none', 1],
+    ['Jolt', 'spark', 190, 80, 58, 'gem', 'star', 'grin', 'mohawk', 'tail', 'stripes', 0, [54, 100, 62]],
+    ['Wattson', 'spark', 44, 80, 60, 'block', 'lash', 'wave', 'star', 'ears', 'freckles', 0],
+    ['Boulder', 'stone', 20, 16, 44, 'gem', 'sleepy', 'grin', 'antlers', 'arms', 'spots', 0],
+    ['Geode', 'stone', 270, 25, 40, 'block', 'shine', 'tiny', 'crystal', 'claws', 'starmark', 0, [290, 80, 72]],
+    ['Dusty', 'stone', 38, 30, 66, 'cloud', 'dot', 'wave', 'puff', 'none', 'freckles', 1, [38, 25, 82]],
+    ['Icicle', 'frost', 200, 60, 80, 'drop', 'oval', 'tiny', 'unicorn', 'wings', 'belly', 0],
+    ['Pompom', 'frost', 215, 20, 95, 'cloud', 'happy', 'tongue', 'bow', 'arms', 'none', 1, [350, 80, 70]],
+    ['Frostbite', 'frost', 185, 50, 62, 'ghost', 'big', 'fang', 'spikes', 'tentacles', 'half', 0],
+    ['Comet', 'sky', 195, 70, 66, 'star', 'big', 'open', 'none', 'tail', 'belly', 0],
+    ['Halo', 'sky', 48, 30, 94, 'ghost', 'happy', 'smile', 'halo', 'wings', 'none', 1, [48, 90, 70]],
+    ['Puffin', 'sky', 215, 40, 40, 'egg', 'dot', 'beak', 'mohawk', 'wings', 'belly', 1, [25, 100, 58]],
+    ['Boo', 'moon', 260, 25, 90, 'ghost', 'oval', 'o', 'none', 'arms', 'none', 1],
+    ['Batty', 'moon', 275, 40, 36, 'round', 'big', 'fang', 'cat', 'wings', 'heart', 0, [330, 70, 60]],
+    ['Orbit', 'moon', 240, 50, 58, 'gem', 'star', 'smile', 'halo', 'none', 'starmark', 0],
+    ['Cupid', 'bloom', 345, 75, 74, 'drop', 'heart', 'smile', 'bow', 'wings', 'heart', 1],
+    ['Dahlia', 'bloom', 310, 60, 60, 'cloud', 'lash', 'tongue', 'flower', 'ears', 'freckles', 1],
+    ['Peachy', 'bloom', 18, 85, 74, 'pear', 'happy', 'o', 'sprout', 'arms', 'belly', 1],
+    ['Gizmo', 'metal', 200, 25, 60, 'gem', 'oval', 'wave', 'star', 'claws', 'half', 0, [50, 95, 60]],
+    ['Boltz', 'metal', 215, 15, 50, 'block', 'star', 'grin', 'unicorn', 'ears', 'stripes', 0, [10, 80, 58]],
+    ['Chrome', 'metal', 220, 10, 82, 'drop', 'lash', 'tiny', 'mohawk', 'tail', 'mask', 0, [190, 90, 60]]
   ];
 
   const LIST = RAW.map((r, i) => ({
@@ -187,6 +219,7 @@
     p.ball = c.type === 'spark' ? p.feat : p.gem; p.ballHi = '#ffffff';
     p.pollen = (f[0] >= 30 && f[0] <= 70 && f[1] > 50) ? '#b4501c' : '#ffcf3a';
     p.aura = '#ffd34d'; p.auraHi = '#ffffff';
+    p.deep = hsl(h + 16 * d, s + 6, l - 24); p.glint = hsl(h - 12 * d, Math.max(0, s - 20), Math.min(97, l + 24));
     return p;
   }
 
@@ -198,6 +231,11 @@
     else if (shape === 'egg') { w -= 2; h += 1; }
     else if (shape === 'slime') { w += 2; h -= 2; }
     else if (shape === 'block') { h -= 1; }
+    else if (shape === 'drop') { h += 2; }
+    else if (shape === 'cloud') { w += 2; }
+    else if (shape === 'star') { w += 4; h += 3; }
+    else if (shape === 'mushroom') { w += 2; h += 1; }
+    else if (shape === 'ghost') { h += 1; }
     return [w, h];
   }
   function shapeFn(shape) {
@@ -214,6 +252,18 @@
           const a = Math.abs(u) / (1 + 0.08 * v);
           return Math.pow(a ** 4 + v ** 4, 0.25);
         };
+      case 'drop':
+        return (u, v) => (v < 0 ? Math.hypot(u / Math.max(0.12, 1 + 0.8 * v), v) : Math.hypot(u, v));
+      case 'ghost':
+        return (u, v) => (v < 0 ? Math.hypot(u, v) : Math.max(Math.abs(u), v / (Math.cos(u * 9.42) > 0 ? 1 : 0.8)));
+      case 'cloud':
+        return (u, v) => Math.hypot(u, v) / (1 + 0.1 * Math.cos(Math.atan2(v, u) * 6 + 0.5));
+      case 'gem':
+        return (u, v) => Math.pow(Math.abs(u) ** 1.45 + Math.abs(v) ** 1.45, 1 / 1.45);
+      case 'star':
+        return (u, v) => Math.hypot(u, v) / (0.72 + 0.28 * Math.cos(Math.atan2(v, u) * 5 + Math.PI / 2));
+      case 'mushroom':
+        return (u, v) => (v < 0.15 ? Math.hypot(u, (v - 0.15) / 1.15) : Math.max(Math.abs(u) / 0.6, v));
       default:
         return (u, v) => Math.hypot(u, v);
     }
@@ -225,16 +275,25 @@
     happy:  [['.e.', 'e.e'], ['.e.', 'e.e'], ['.ee.', 'e..e']],
     sleepy: [['eee'], ['eee'], ['eeee']],
     shine:  [['wii', 'iee', 'iee'], ['wii', 'iee', 'iee', 'iii'], ['wii', 'iee', 'iee', 'iii']],
-    ring:   [['www', 'wew', 'www'], ['wwww', 'weew', 'weew', 'wwww'], ['wwww', 'weew', 'weew', 'wwww']]
+    ring:   [['www', 'wew', 'www'], ['wwww', 'weew', 'weew', 'wwww'], ['wwww', 'weew', 'weew', 'wwww']],
+    star:   [['.e.', 'eee', '.e.'], ['.e.', 'ewe', '.e.'], ['.ee.', 'ewee', 'eeee', '.ee.']],
+    oval:   [['we', 'ee', 'ee'], ['we', 'ee', 'ee', 'ee'], ['wee', 'eee', 'eee', 'eee']],
+    heart:  [['i.i', 'iii', '.i.'], ['i.i', 'iii', '.i.'], ['ii.ii', 'iwiii', '.iii.', '..i..']],
+    lash:   [['e..', '.we', '.ee'], ['e...', '.wee', '.eee'], ['e...', '.wee', '.eee', '.eee']]
   };
   const MOUTHS = {
     smile: [['m..m', '.mm.'], ['m..m', '.mm.'], ['m....m', '.mmmm.']],
     open:  [['mm', 'tt'], ['.mm.', 'mttm'], ['.mm.', 'mttm', '.mm.']],
     cat:   [['m.mm.m', '.m..m.'], ['m.mm.m', '.m..m.'], ['m.mm.m', '.m..m.']],
     fang:  [['m..m', '.mm.', '..w.'], ['m..m', '.mm.', '..w.'], ['m....m', '.mmmm.', '...w..']],
-    tiny:  [['mm'], ['mm'], ['mmmm']]
+    tiny:  [['mm'], ['mm'], ['mmmm']],
+    o:     [['mm', 'mm'], ['mm', 'mm'], ['.mm.', 'mttm', '.mm.']],
+    grin:  [['mwwm', '.mm.'], ['mwwwwm', '.mmmm.'], ['mwwwwm', '.mmmm.']],
+    tongue: [['mmmm', '.tt.'], ['mmmm', '.tt.'], ['mmmmmm', '..tt..', '..tt..']],
+    wave:  [['m.m.', '.m.m'], ['m.m.m.', '.m.m.m'], ['m.m.m.', '.m.m.m']],
+    beak:  [['pp', 'pp'], ['pppp', '.pp.'], ['pppp', 'pppp', '.pp.']]
   };
-  const CH = { w: 'white', e: 'eye', i: 'iris', m: 'mouth', t: 'tongue' };
+  const CH = { w: 'white', e: 'eye', i: 'iris', m: 'mouth', t: 'tongue', p: 'pollen' };
 
   const WINGS = [
     [[-1, 1], [0, 2], [1, 1]],
@@ -274,7 +333,7 @@
     };
 
     // --- features behind the body ---
-    if (c.shape !== 'slime') {
+    if (c.shape !== 'slime' && c.shape !== 'ghost' && c.shape !== 'star') {
       const fw = stage === 3 ? 4 : 3, fxc = 16 - Math.round(W * 0.27), fx0 = fxc - Math.ceil(fw / 2);
       for (let y = bottom + 1; y <= bottom + 2; y++) for (let x = fx0; x < fx0 + fw; x++) setM(x, y, 'body');
     }
@@ -299,7 +358,72 @@
       });
     }
 
+    else if (c.side === 'ears') {
+      const w = stage, hh = 2 + 2 * stage, y0 = Math.round(top + H * 0.22);
+      for (let i = 0; i < hh; i++) { const lx = leftAt(y0 + i); for (let k = 1; k <= w + (i > 0 && i < hh - 1 ? 1 : 0); k++) setM(lx - k, y0 + i, k === 1 && i > 0 && i < hh - 1 ? 'inner' : 'body'); }
+    } else if (c.side === 'claws') {
+      const ya = Math.round(cyc + H * 0.1), lx = leftAt(ya);
+      for (let k = 1; k <= stage; k++) setM(lx - k, ya, 'feat');
+      const cx = lx - stage - 1;
+      setM(cx, ya - 1, 'feat'); setM(cx - 1, ya - 2, 'feat'); setM(cx, ya + 1, 'feat'); setM(cx - 1, ya + 1, 'feat');
+      if (stage > 1) { setM(cx - 1, ya - 1, 'feat'); setM(cx - 2, ya - 3, 'feat'); setM(cx - 2, ya + 2, 'feat'); }
+    } else if (c.side === 'tail') {
+      const yb = bottom - 1 - stage, rx = N - 1 - leftAt(yb);
+      const pts = [[1, 0], [2, 0], [3, -1], [4, -2], [4, -3], [3, -4], [5, -1], [5, -3], [2, -5]].slice(0, 3 + stage * 2);
+      pts.forEach(([dx, dy], i) => { set(rx + dx, yb + dy, i === pts.length - 1 ? 'feat' : 'body'); set(rx + dx, yb + dy + 1, i === pts.length - 1 ? 'feat' : 'body'); });
+    } else if (c.side === 'tentacles') {
+      for (let k = -2; k <= 2; k++) { const x = Math.round(15.5 + k * W * 0.2); for (let i = 0; i <= stage; i++) set(x + ((i + k + 4) % 2 ? 0 : (k < 0 ? -1 : 1)), bottom + i, 'body'); }
+    }
+
     const head = {
+      halo() {
+        const cy = top - 1.6 - stage * 0.4, rx = 3 + stage, ry = 1.3;
+        for (let y = Math.floor(cy - 2); y <= cy + 2; y++) for (let x = 0; x < N; x++) {
+          const d = ((x + 0.5 - 16) / rx) ** 2 + ((y + 0.5 - cy) / ry) ** 2;
+          if (d <= 1.35 && d >= (stage === 1 ? 0.2 : 0.42)) set(x, y, (x + y) % 5 === 0 ? 'auraHi' : 'aura');
+        }
+      },
+      unicorn() {
+        const hh = 3 + 2 * stage;
+        for (let i = 0; i < hh; i++) { const half = (1 - i / hh) * (0.7 + 0.35 * stage); for (let x = 0; x < N; x++) if (Math.abs(x + 0.5 - 16) <= half + 0.3) set(x, top + 1 - i, i % 2 ? 'horn' : 'hornShade'); }
+      },
+      bow() {
+        const w = 1 + stage;
+        for (let dx = 1; dx <= w; dx++) { const hh = Math.min(dx, 1 + (stage > 1 ? 1 : 0)); for (let dy = -hh; dy <= hh; dy++) setM(15 - dx, top - 1 + dy, 'feat'); }
+        set(15, top - 1, 'featHi'); set(16, top - 1, 'featHi'); set(15, top, 'featShade'); set(16, top, 'featShade');
+      },
+      spikes() {
+        for (let k = -stage; k <= stage; k++) {
+          const xc = 16 + k * 2.6, hh = (1.5 + stage) * (1 - Math.abs(k) / (stage + 1.5)), base = topAt(Math.floor(xc)) + 1.2;
+          for (let y = Math.floor(base - hh) - 1; y <= base; y++) for (let x = 0; x < N; x++) { const t = (base - (y + 0.5)) / hh; if (t >= 0 && t <= 1 && Math.abs(x + 0.5 - xc) <= 1.2 * (1 - t) + 0.2) set(x, y, 'feat'); }
+        }
+      },
+      star() {
+        const y0 = top - stage;
+        for (let y = top; y >= y0; y--) setM(15, y, 'stalk');
+        const rad = stage === 1 ? 1 : 2, cy = y0 - rad;
+        for (let dy = -rad; dy <= rad; dy++) for (let x = 12; x <= 19; x++) { const dx = Math.min(Math.abs(x - 15), Math.abs(x - 16)); if (dx + Math.abs(dy) <= rad) set(x, cy + dy, dx + Math.abs(dy) === 0 ? 'auraHi' : 'aura'); }
+      },
+      antlers() {
+        const hh = 2 + 2 * stage, xc = 16 - Math.round(W * 0.2), yb = topAt(xc);
+        for (let i = 0; i < hh; i++) { const x = xc - Math.floor(i / 2); setM(x, yb - i, 'horn'); if (i === Math.floor(hh / 2)) { setM(x + 1, yb - i - 1, 'horn'); if (stage > 1) setM(x + 2, yb - i - 2, 'horn'); } if (i === hh - 1 && stage > 1) setM(x - 1, yb - i + 1, 'horn'); }
+      },
+      sprout() {
+        const y0 = top - stage;
+        for (let y = top; y >= y0; y--) setM(15, y, 'stem');
+        const L = 1 + stage;
+        for (let j = 1; j <= L; j++) for (let d = 0; d <= (j === L ? 0 : 1); d++) setM(15 - j, y0 - d - Math.floor(j / 2), 'feat');
+      },
+      puff() {
+        const rad = 1.3 + 0.45 * stage;
+        [[16, top - rad * 0.5, rad * 1.15], [16 - rad * 1.5, top + 0.4, rad], [16 + rad * 1.5, top + 0.4, rad]].forEach(([cx, cy, rr]) => {
+          for (let y = Math.floor(cy - rr) - 1; y <= cy + rr + 1; y++) for (let x = 0; x < N; x++) if (Math.hypot(x + 0.5 - cx, y + 0.5 - cy) <= rr) set(x, y, 'feat');
+        });
+      },
+      mohawk() {
+        const half = 1 + stage;
+        for (let x = 16 - half; x < 16 + half; x++) { const hh = Math.round((1.5 + stage) - Math.abs(x + 0.5 - 16) * 0.7), t0 = topAt(x); for (let i = 0; i <= hh; i++) set(x, t0 - i, (x + i) % 3 === 0 ? 'featHi' : 'feat'); }
+      },
       cat() {
         const bw = 3 + stage, eh = 2 + stage, xc = 16 - Math.round(W * 0.27), yb = topAt(xc) + 1;
         for (let i = 0; i < eh; i++) {
@@ -413,7 +537,8 @@
     const eyeStyle = c.pattern === 'mask' ? 'ring' : c.eye;
     const eyeRows = EYES[eyeStyle][stage - 1];
     const ew = eyeRows[0].length, eh = eyeRows.length;
-    const eyeY = top + Math.round(H * 0.4) + (eyeStyle === 'sleepy' ? 1 : 0);
+    const eyeY = top + Math.round(H * (c.shape === 'mushroom' ? 0.58 : c.shape === 'drop' ? 0.48 : c.shape === 'star' ? 0.42 : 0.4)) + (eyeStyle === 'sleepy' ? 1 : 0);
+    if (c.shape === 'mushroom') for (let i = 0; i < N * N; i++) if (mask[i] && UV[i][1] >= 0.15) g[i] = 'belly';
     if (c.pattern === 'belly') {
       const by = top + H * 0.66, a = W * 0.3, b = H * 0.3;
       for (let y = top; y <= bottom; y++) for (let x = 0; x < N; x++)
@@ -426,6 +551,17 @@
     } else if (c.pattern === 'stripes') {
       const len = 1 + stage, xs = [15, 15 - (2 + stage)];
       xs.forEach(x => { const t = topAt(x); for (let y = t; y < t + len; y++) if (isBody(x, y)) setM(x, y, 'spot'); });
+    } else if (c.pattern === 'freckles') {
+      const o2 = Math.max(2, Math.round(W * 0.17)), fx = 16 - o2 - ew, fy = eyeY + eh + 1;
+      [[fx - 1, fy], [fx + 1, fy], [fx, fy + 1]].forEach(([x, y]) => { if (isBody(x, y) && isBody(N - 1 - x, y)) setM(x, y, 'spot'); });
+    } else if (c.pattern === 'heart') {
+      const R = 1 + 0.75 * stage, hy0 = top + H * 0.78;
+      for (let y = top; y <= bottom; y++) for (let x = 0; x < N; x++) { const hx = (x + 0.5 - 16) / R, hy = -(y + 0.5 - hy0) / R + 0.2; if (isBody(x, y) && (hx * hx + hy * hy - 1) ** 3 - hx * hx * hy ** 3 < 0) g[y * N + x] = 'belly'; }
+    } else if (c.pattern === 'half') {
+      for (let i = 0; i < N * N; i++) if (mask[i] && UV[i][1] > 0.3 + ((i % N) % 4 < 2 ? 0.1 : 0)) g[i] = 'belly';
+    } else if (c.pattern === 'starmark' && stage > 1) {
+      const sy = top + 2 + (stage === 3 ? 3 : 0);
+      [[15, sy], [16, sy], [15, sy - 1], [16, sy + 1], [14, sy], [17, sy]].forEach(([x, y]) => { if (isBody(x, y)) g[y * N + x] = 'spot'; });
     } else if (c.pattern === 'mask') {
       for (let y = eyeY - 1; y <= eyeY + eh; y++) for (let x = 0; x < N; x++) {
         const i = y * N + x;
@@ -440,8 +576,9 @@
       if (k !== 'body' && k !== 'belly') continue;
       const [u, v, r] = UV[i], x = i % N, y = (i / N) | 0, dl = 0.55 * u + 0.83 * v;
       const rim = (r > 0.7 && dl > 0.18) || !isBody(x, y + 1);
-      if (rim) g[i] = k === 'body' ? 'shade' : 'bellyShade';
-      else if (k === 'body' && (((u + 0.42) ** 2 + (v + 0.5) ** 2) < 0.04 || (r > 0.82 && dl < -0.62))) g[i] = 'hi';
+      if (rim) g[i] = k === 'body' ? (r > 0.86 && dl > 0.7 && isBody(x, y + 1) ? 'deep' : 'shade') : 'bellyShade';
+      else if (k === 'body' && ((u + 0.42) ** 2 + (v + 0.5) ** 2) < 0.012 && stage > 1) g[i] = 'glint';
+      else if (k === 'body' && (((u + 0.42) ** 2 + (v + 0.5) ** 2) < 0.05 || (r > 0.8 && dl < -0.58))) g[i] = 'hi';
     }
 
     // --- stage 3 gem (legendaries always wear one) ---

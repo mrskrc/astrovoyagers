@@ -333,6 +333,123 @@
     }
   }
 
+  // ---------- 7.8: hulls with their own silhouette ----------
+  // prof(u, H) → [up, down] in pixels from the middle line (u: 0 the tail … 1 the nose);
+  // tint(u, y, colour, k) → another colour; back / body / front draw the extra parts.
+  const eLL = (u, a, b, r) => r * Math.sqrt(Math.max(0, 1 - ((u - a) / b) ** 2));
+  const FORMS = {
+    paperplane: {
+      prof: u => [u > 0.94 ? 0.6 : 1.2, u > 0.94 ? 0.6 : 1 + 6.5 * (1 - u) * Math.min(1, u / 0.1)],
+      back: k => k.back.poly([[k.X(0.04), k.cy - 1], [k.X(0.78), k.cy - 1], [k.X(-0.02), k.cy - 8]], (x, y) => (y < k.cy - 4 ? shade(k.P.c1, -0.06) : shade(k.P.c1, -0.16))),
+      body: k => { for (let i = 2; i < k.L - 2; i++) k.hl.set(k.x0 + i, k.cy + 1, shade(k.P.c1, -0.22)); for (let i = 3; i < k.L * 0.7; i += 4) k.hl.set(k.x0 + i, k.cy + 3, k.P.c2); }
+    },
+    pencil: {
+      prof: u => { const r = u > 0.8 ? 3.4 * (1 - (u - 0.8) / 0.2) + 0.5 : 3.4; return [r, r]; },
+      tint: (u, y, c, k) => (u > 0.95 ? '#3a3a48' : u > 0.8 ? (y < k.cy ? '#f6dcae' : '#e0bf8a') : u < 0.09 ? '#ff9ac2' : u < 0.16 ? (Math.round(u * 100) % 2 ? '#c9d0e2' : '#9aa6c8') : y === k.cy + 1 ? shade(c, -0.18) : null)
+    },
+    bus: {
+      prof: u => [u > 0.93 ? 4.5 : 6.5, 4],
+      tint: (u, y, c, k) => (y === k.cy + 1 ? '#1d1f2e' : null),
+      body: k => { for (let i = 3; i < k.L - 6; i += 5) { k.hl.rect(k.x0 + i, k.cy - 5, 4, 4, '#bff8ff'); k.hl.set(k.x0 + i, k.cy - 5, '#ffffff'); } k.hl.rect(k.x0 + k.L - 4, k.cy - 5, 3, 5, '#7ff0ff'); k.hl.set(k.x0 + k.L - 1, k.cy + 2, '#fff3a0'); k.hl.set(k.x0, k.cy + 2, '#ff5a5a'); },
+      front: k => [0.2, 0.76].forEach(u => { k.fr.disc(k.X(u), k.cy + 5, 2.6, '#2a2e3d'); k.fr.set(k.X(u), k.cy + 5, '#c9d0e2'); })
+    },
+    train: {
+      prof: u => (u < 0.34 ? [8.5, 4] : u > 0.93 ? [3, 4] : [4, 4]),
+      tint: (u, y, c, k) => (u < 0.34 && y < k.cy - 6 ? k.P.c2 : y === k.cy + 2 ? k.P.c2 : null),
+      back: k => { k.back.rect(k.X(0.78), k.cy - 9, 3, 6, '#3a4766'); k.back.rect(k.X(0.78) - 1, k.cy - 10, 5, 2, '#566079'); k.back.ell(k.X(0.56), k.cy - 4, 2.4, 2.6, k.P.c2); for (let j = 0; j < 3; j++) k.s.disc(k.X(0.78) - 2 - j * 4 - (k.t % 3), k.cy - 12 - j * 2, 1.6 + j * 0.7, '#e8ecf8', 0.55 - j * 0.14); k.back.poly([[k.X(0.98), k.cy + 1], [k.X(1.08), k.cy + 4], [k.X(0.98), k.cy + 4]], '#566079'); },
+      body: k => { k.hl.rect(k.X(0.08), k.cy - 6, 6, 4, '#bff8ff'); k.hl.set(k.X(0.08), k.cy - 6, '#ffffff'); k.hl.set(k.x0 + k.L - 1, k.cy - 1, '#fff3a0'); },
+      front: k => { [0.14, 0.42, 0.62, 0.82].forEach((u, i) => { k.fr.disc(k.X(u), k.cy + 5, i ? 2.2 : 2.8, '#2a2e3d'); k.fr.set(k.X(u), k.cy + 5, '#ffd23f'); }); k.fr.line(k.X(0.42), k.cy + 5, k.X(0.82), k.cy + 5, '#c9d0e2'); }
+    },
+    galleon: {
+      prof: u => [u < 0.2 ? 5 : u > 0.86 ? 3.5 : 2, 2 + 5 * Math.pow(Math.sin(Math.PI * Math.min(1, u * 1.05)), 0.6)],
+      tint: (u, y, c, k) => (y === k.cy - 1 ? k.P.c2 : (y - k.cy) % 3 === 2 ? shade(c, -0.14) : null),
+      back: k => {
+        [[0.34, 15], [0.62, 13]].forEach(([u, h], i) => {
+          const x = k.X(u); k.back.rect(x, k.cy - h, 1, h, '#8a5a34');
+          k.back.poly([[x - 5, k.cy - h + 2], [x + 6, k.cy - h + 2], [x + 8 + (k.t % 4 < 2 ? 1 : 0), k.cy - h / 2], [x + 6, k.cy - 3], [x - 5, k.cy - 3]], (px, py) => (py % 4 === 0 ? shade(k.P.c2, -0.1) : k.P.c2));
+          if (!i) { k.back.rect(x + 1, k.cy - h - 3, 4, 2, '#e5484d'); k.back.rect(x, k.cy - h - 3, 1, 3, '#8a5a34'); }
+        });
+        k.back.line(k.X(0.9), k.cy - 3, k.X(1.12), k.cy - 6, '#8a5a34');
+      },
+      body: k => { for (let i = 5; i < k.L - 6; i += 5) k.hl.rect(k.x0 + i, k.cy + 2, 2, 2, '#1d1f2e'); k.hl.rect(k.X(0.04), k.cy - 3, 3, 2, '#fff3a0'); }
+    },
+    duck: {
+      prof: u => (u < 0.1 ? [5.5 - u * 20, 1] : [Math.max(0.8, eLL(u, 0.5, 0.5, 5)), Math.max(0.8, eLL(u, 0.5, 0.5, 6))]),
+      back: k => k.back.poly([[k.X(0.98), k.cy - 9], [k.X(1.2), k.cy - 8], [k.X(0.98), k.cy - 6]], '#ff9a3d'),
+      body: k => { const hx = k.X(0.8), hy = k.cy - 8; k.hl.disc(hx, hy, 4.8, (x, y) => (y < hy - 2 ? shade(k.P.c1, 0.25) : k.P.c1)); k.hl.rect(hx + 1, hy - 2, 2, 2, '#ffffff'); k.hl.set(hx + 2, hy - 1, INK); k.hl.ell(k.X(0.42), k.cy, 5, 3, shade(k.P.c1, -0.14)); k.hl.ell(k.X(0.4), k.cy - 1, 4, 2, shade(k.P.c1, -0.04)); }
+    },
+    turtle: {
+      prof: u => [u > 0.04 && u < 0.86 ? Math.max(1, eLL(u, 0.45, 0.42, 8.5)) : 1, 2.5],
+      tint: (u, y, c, k) => (y > k.cy ? '#f2e2a8' : y === k.cy ? shade(c, -0.4) : null),
+      back: k => { const g = '#8fd35a', gd = '#5fa83a'; k.back.disc(k.X(0.97), k.cy - 1, 3.4, g); k.back.set(k.X(0.97) + 1, k.cy - 2, INK); k.back.set(k.X(0.97) + 2, k.cy, gd); [[0.2, 1], [0.68, -1]].forEach(([u, d]) => k.back.poly([[k.X(u), k.cy + 2], [k.X(u) + 5, k.cy + 2], [k.X(u) + 2 + d * ((k.t >> 1) % 2), k.cy + 7]], g)); k.back.poly([[k.X(0.02), k.cy], [k.X(-0.08), k.cy + 2], [k.X(0.02), k.cy + 2]], g); }
+    },
+    snail: {
+      prof: u => [u > 0.82 ? 5.5 : 1.5, 2.5],
+      tint: (u, y, c, k) => (y > k.cy + 1 ? '#ffe9c8' : '#ffd6a8'),
+      back: k => { const x = k.X(0.92); k.back.line(x, k.cy - 5, x - 1, k.cy - 10, '#ffd6a8'); k.back.line(x + 3, k.cy - 5, x + 4, k.cy - 10, '#ffd6a8'); k.back.disc(x - 1, k.cy - 11, 1.2, '#ffffff'); k.back.disc(x + 4, k.cy - 11, 1.2, '#ffffff'); k.back.set(x - 1, k.cy - 11, INK); k.back.set(x + 4, k.cy - 11, INK); },
+      body: k => { const sx = k.X(0.38), sy = k.cy - 6.5; k.hl.disc(sx, sy, 8, (x, y) => k.paint(x, y, sy - 8, sy + 8)); for (let a = 0; a < 44; a++) { const th = a * 0.42, rr = 0.6 + a * 0.16; k.hl.set(sx + Math.cos(th) * rr, sy + Math.sin(th) * rr, shade(k.P.c2, -0.1)); } k.hl.set(k.x0 + k.L - 2, k.cy, '#c2459c'); }
+    },
+    zeppelin: {
+      prof: u => { const r = Math.max(0.8, 7.5 * Math.pow(Math.max(0, 1 - (2 * u - 1) ** 2), 0.42)); return [r, r]; },
+      tint: (u, y, c, k) => (Math.round(u * (k.L - 1)) % 7 === 3 ? shade(c, -0.12) : null),
+      back: k => { k.back.poly([[k.X(0.02), k.cy - 2], [k.X(0.2), k.cy - 5], [k.X(0.02), k.cy - 11]], k.P.c2); k.back.poly([[k.X(0.02), k.cy + 2], [k.X(0.2), k.cy + 5], [k.X(0.02), k.cy + 11]], k.P.c2); },
+      front: k => { const gx = k.X(0.42), gy = k.cy + 8; k.fr.rect(gx, gy, 9, 3, '#8a5a34'); k.fr.rect(gx, gy, 9, 1, '#c98a4a'); [1, 4, 7].forEach(d => k.fr.set(gx + d, gy + 1, '#fff3a0')); k.fr.rect(gx + 2, gy - 1, 1, 1, '#566079'); k.fr.rect(gx + 6, gy - 1, 1, 1, '#566079'); }
+    },
+    carrot: {
+      prof: u => { const r = 0.7 + 6 * Math.pow(1 - u, 0.75) * Math.min(1, 0.5 + u * 8); return [r, r]; },
+      tint: (u, y, c, k) => ((Math.round(u * (k.L - 1)) * 3 + y * 5) % 17 === 0 ? shade(c, -0.2) : null),
+      back: k => { ['#3f9a4e', '#6fe36f', '#3f9a4e'].forEach((g, i) => { const a = -2.2 + i * 0.5; for (let q = 0; q < 9; q++) { k.back.set(k.X(0.04) + Math.cos(a) * q, k.cy + Math.sin(a) * q * 1.1 - 3, g); k.back.set(k.X(0.04) + Math.cos(a) * q + 1, k.cy + Math.sin(a) * q * 1.1 - 3, g); } }); }
+    },
+    banana: {
+      prof: u => { const e = (2 * u - 1) ** 2, off = 2.5 - 4.5 * e, t = Math.max(2.4, 3.4 * Math.sqrt(1 - e * 0.8)); return [t - off, t + off]; },
+      tint: (u, y, c, k) => (u < 0.05 || u > 0.96 ? '#6a4a20' : null)
+    },
+    guitar: {
+      prof: u => { const r = Math.max(u > 0.9 ? 2.4 : 1.3, eLL(u, 0.13, 0.14, 7.5), eLL(u, 0.32, 0.12, 5.5)); return [r, r]; },
+      tint: (u, y, c, k) => (u > 0.42 ? (u > 0.9 ? '#2a2a40' : '#6a4a30') : null),
+      body: k => { k.hl.disc(k.X(0.24), k.cy, 2.4, '#1d1f2e'); k.hl.rect(k.X(0.07), k.cy - 2, 2, 5, '#2a2a40'); for (let i = Math.round(k.L * 0.08); i < k.L - 2; i += 1) if (i % 2) k.hl.set(k.x0 + i, k.cy, '#e8ecf8', 0.75); [0.92, 0.97].forEach(u => { k.hl.set(k.X(u), k.cy - 2, '#ffd23f'); k.hl.set(k.X(u), k.cy + 2, '#ffd23f'); }); }
+    },
+    teapot: {
+      prof: u => { const r = u > 0.03 && u < 0.87 ? Math.max(1, eLL(u, 0.45, 0.42, 7.5)) : 1; return [r, r]; },
+      tint: (u, y, c, k) => (y === k.cy - 3 || y === k.cy - 4 ? k.P.c2 : null),
+      back: k => { k.back.ring(k.X(0.04), k.cy, 5, 5.5, 2, k.P.c1); k.back.poly([[k.X(0.78), k.cy + 1], [k.X(1.1), k.cy - 6], [k.X(1.2), k.cy - 4], [k.X(0.86), k.cy + 5]], k.P.c1); k.back.ell(k.X(0.45), k.cy - 8, 4, 1.6, k.P.c2); k.back.disc(k.X(0.45), k.cy - 10, 1.6, k.P.c2); for (let j = 0; j < 3; j++) k.s.disc(k.X(1.18) + j * 2, k.cy - 8 - j * 3 - (k.t % 3), 1.2 + j * 0.5, '#ffffff', 0.5 - j * 0.14); },
+      body: k => { [[0.3, -1], [0.56, 1], [0.44, 3]].forEach(([u, d]) => k.hl.glyph(GLYPH.heart3[0], k.X(u), k.cy + d, { '#': k.P.c2 })); }
+    },
+    sneaker: {
+      prof: u => [u < 0.3 ? 8 : Math.max(2, 8 - 6 * Math.pow((u - 0.3) / 0.7, 0.65)) - (u > 0.96 ? 1 : 0), 4],
+      tint: (u, y, c, k) => (y > k.cy + 1 ? (y === k.cy + 3 ? '#c9d0e2' : '#ffffff') : u > 0.86 ? '#ffffff' : u < 0.3 && y < k.cy - 6 ? k.P.c2 : null),
+      body: k => { for (let j = 0; j < 4; j++) { const x = k.X(0.38 + j * 0.1), y = k.cy - 6 + j * 1.4; k.hl.line(x, y, x + 2, y + 2, '#ffffff'); } k.hl.glyph(GLYPH.star[0], k.X(0.1), k.cy - 3, { '#': k.P.c2 }); }
+    },
+    cat: {
+      prof: u => { const r = u > 0.05 && u < 0.74 ? Math.max(1, Math.min(4.5, eLL(u, 0.4, 0.36, 6))) : 1; return [r, r]; },
+      back: k => { let x = k.X(0.06), y = k.cy; for (let q = 0; q < 11; q++) { k.back.rect(x, y, 2, 2, q > 8 ? k.P.c2 : k.P.c1); x -= q < 4 ? 1 : 0.3; y -= q < 3 ? 0 : 1; } [[0.3, 0], [0.56, 1]].forEach(([u, d]) => k.back.rect(k.X(u), k.cy + 3, 3, 3 + ((k.t >> 1) + d) % 2, k.P.c2)); },
+      body: k => { const hx = k.X(0.84), hy = k.cy - 3; k.hl.poly([[hx - 5, hy - 2], [hx - 4, hy - 8], [hx - 1, hy - 4]], k.P.c1); k.hl.poly([[hx + 1, hy - 4], [hx + 4, hy - 8], [hx + 5, hy - 2]], k.P.c1); k.hl.set(hx - 3, hy - 5, '#ff9ad8'); k.hl.set(hx + 3, hy - 5, '#ff9ad8'); k.hl.disc(hx, hy, 5.4, k.P.c1); k.hl.rect(hx - 3, hy - 1, 2, 2, '#ffffff'); k.hl.rect(hx + 2, hy - 1, 2, 2, '#ffffff'); k.hl.set(hx - 2, hy, INK); k.hl.set(hx + 3, hy, INK); k.hl.set(hx, hy + 2, '#ff7ad9'); k.hl.line(hx + 4, hy + 2, hx + 7, hy + 1, '#ffffff'); k.hl.line(hx + 4, hy + 3, hx + 7, hy + 4, '#ffffff'); }
+    },
+    key: {
+      prof: u => (u < 0.3 ? [0, 0] : [1.6, 1.6]),
+      body: k => { const cx = k.X(0.15), R = 6.5; k.hl.ring(cx, k.cy, R, R, 2.6, k.P.c1); for (let y = k.cy - 7; y <= k.cy + 7; y++) for (let x = Math.floor(cx - 7); x <= cx + 7; x++) if (k.hl.on(x, y)) k.hl.set(x, y, k.paint(x, y, k.cy - 7, k.cy + 7)); [0.72, 0.84, 0.94].forEach((u, i) => k.hl.rect(k.X(u), k.cy + 2, 2, 3 + (i % 2) * 2, k.P.c1)); k.hl.disc(cx, k.cy - 5, 1, '#ffffff', 0.8); }
+    },
+    star: {
+      prof: () => [0, 0],
+      body: k => { const cx = k.X(0.5), R = 11, pts = []; for (let q = 0; q < 10; q++) { const a = (q * Math.PI) / 5, rr = q % 2 ? 4.8 : R; pts.push([cx + Math.cos(a) * rr * 1.08, k.cy + Math.sin(a) * rr]); } k.hl.poly(pts, (x, y) => k.paint(x, y, k.cy - R, k.cy + R)); k.hl.disc(cx + 0.5, k.cy, 3, '#7ff0ff'); k.hl.disc(cx, k.cy - 0.5, 1.6, '#bff8ff'); k.hl.set(cx - 1, k.cy - 1, '#ffffff'); }
+    },
+    heart: {
+      prof: () => [0, 0],
+      body: k => { const cx = k.X(0.5), R = 9.5; for (let y = k.cy - 12; y <= k.cy + 12; y++) for (let x = Math.floor(cx - 14); x <= cx + 14; x++) { const hx = (x + 0.5 - cx) / R, hy = -(y + 0.5 - k.cy) / R + 0.15; if ((hx * hx + hy * hy - 1) ** 3 - hx * hx * hy ** 3 < 0) k.hl.set(x, y, k.paint(x, y, k.cy - 11, k.cy + 10)); } k.hl.disc(cx - 4, k.cy - 5, 1.6, '#ffffff', 0.7); k.hl.disc(cx + 0.5, k.cy + 1, 2.6, '#7ff0ff'); k.hl.set(cx - 1, k.cy, '#ffffff'); }
+    },
+    burger: {
+      prof: u => { const r = Math.max(1, 6.5 * Math.pow(Math.max(0, 1 - (2 * u - 1) ** 2), 0.3)); return [r, Math.min(r, 5.5)]; },
+      tint: (u, y, c, k) => { const d = y - k.cy; return d === -1 ? ((Math.round(u * 40) % 3) ? '#6fe36f' : '#3f9a4e') : d === 0 || d === 1 ? '#7a4a2a' : d === 2 ? '#ffd23f' : d === -2 && Math.round(u * 40) % 5 === 0 ? '#e5484d' : null; },
+      body: k => { for (let i = 4; i < k.L - 4; i += 3) k.hl.set(k.x0 + i, k.cy - 4 - (i % 2), '#fff6c8'); }
+    },
+    drill: {
+      prof: u => (u > 0.62 ? (() => { const r = 0.6 + 6 * (1 - (u - 0.62) / 0.38); return [r, r]; })() : [6, 5]),
+      tint: (u, y, c, k) => (u > 0.62 ? ((Math.round(u * (k.L - 1)) + (y - k.cy) + 40 + k.t) % 4 < 2 ? '#c9d0e2' : '#8a94b8') : null),
+      body: k => { k.hl.rect(k.X(0.3), k.cy - 4, 5, 4, '#bff8ff'); k.hl.set(k.X(0.3), k.cy - 4, '#ffffff'); k.hl.rect(k.X(0.58), k.cy - 6, 2, 11, '#566079'); },
+      front: k => { k.fr.rect(k.X(0.02), k.cy + 5, k.L * 0.56, 3, '#2a2e3d'); for (let i = 1; i < k.L * 0.56; i += 3) k.fr.set(k.X(0.02) + i + (k.t % 3), k.cy + 6, '#8a94b8'); }
+    }
+  };
+
   // which paint the ship wears: a bought paint, or else the hull's own factory colours
   function paintOf(eq, H) {
     const pe = item(eq && eq.paint), st = SD().STARTER.paint;
@@ -345,7 +462,8 @@
     const dec = item(eq && eq.decal), tr = item(eq && eq.trail);
     const s = surf(SW, SH), L = H.len, cy = 20, x0 = SW - L - 4;
     const twin = H.form === 'twin', mids = twin ? [cy - 4, cy + 4] : [cy];
-    const cols = mids.map(m => { const c = []; for (let i = 0; i < L; i++) { const h = halfH(H, i / (L - 1)); c.push([Math.round(m - h), Math.round(m + h) - 1]); } return c; });
+    const FM = FORMS[H.form] || null;
+    const cols = mids.map(m => { const c = []; for (let i = 0; i < L; i++) { if (FM) { const [up, dn] = FM.prof(i / (L - 1), H); c.push([Math.round(m - up), Math.round(m + dn) - 1]); } else { const h = halfH(H, i / (L - 1)); c.push([Math.round(m - h), Math.round(m + h) - 1]); } } return c; });
     const col = cols[0];
     const topAt = i => Math.min(...cols.map(c => c[Math.max(0, Math.min(L - 1, i))][0]));
     const botAt = i => Math.max(...cols.map(c => c[Math.max(0, Math.min(L - 1, i))][1]));
@@ -430,9 +548,11 @@
     if (H.spikes) for (let i = Math.round(L * 0.15); i < L * 0.78; i += 4) { const tp = topAt(i); back.poly([[x0 + i, tp + 1], [x0 + i + 1.5, tp - 3], [x0 + i + 3, tp + 1]], shade(P.c2, 0.1)); }
     if (H.puffs) for (let i = 2; i < L - 3; i += 5) { back.disc(x0 + i + 1, topAt(i) + 0.5, 2.2, '#ffffff'); back.disc(x0 + i + 3, botAt(i + 2) + 0.5, 2.2, '#e0ecff'); }
     if (H.form === 'rocket') { const i0 = Math.round(L * 0.04), f = H.fin; back.poly([[x0 + i0, botAt(i0)], [x0 + i0 + f + 2, botAt(i0 + f)], [x0 + i0 - 1, botAt(i0) + f]], P.c2); }
+    const fr = surf(SW, SH), hl = surf(SW, SH), r = rng(hash(P.pattern + P.c1));
+    const K = { s, back, hl, fr, x0, L, cy, P, t, H, E, X: u => x0 + u * L, topAt, botAt, paint: (x, y, top, bot) => paintAt(P, Math.round(x - x0), y, L, cy, top, bot, r) };
+    if (FM && FM.back) FM.back(K);
     back.outline(ink); s.blit(back, 0, 0);
     // the hull
-    const hl = surf(SW, SH), r = rng(hash(P.pattern + P.c1));
     cols.forEach((cc, hi) => {
       const m = mids[hi];
       for (let i = 0; i < L; i++) {
@@ -441,6 +561,7 @@
           if (H.nose === 'split' && u > 0.8 && bot - top >= 3 && (y === m || y === m - 1)) continue;
           let c = paintAt(P, i, y - m + cy, L, cy, top - m + cy, bot - m + cy, r);
           if (H.form === 'rocket' && u > 0.86) c = P.c2;
+          if (FM && FM.tint) c = FM.tint(u, y, c, K) || c;
           if (H.form === 'crystal') c = shade(c, (i + (y - m) * 2) % 6 < 3 ? 0.18 : -0.08);
           if (y === top) c = shade(c, 0.35); else if (y === bot) c = shade(c, -0.35); else if (y === bot - 1 && bot - top > 4) c = shade(c, -0.15);
           hl.set(x0 + i, y, c);
@@ -452,6 +573,7 @@
     if (H.gold) for (let i = 2; i < L - 3; i++) hl.set(x0 + i, cy - 1, i % 4 ? '#ffd23f' : '#fff6c8');
     if (H.holes) for (let k = 0; k < H.holes; k++) { const hx = x0 + Math.round(L * (0.28 + k * 0.13)); hl.rect(hx, cy - 1, 2, 2, '#3aa8d8'); hl.set(hx, cy - 1, '#bff8ff'); }
     // tail fin
+    if (FM && FM.body) FM.body(K);
     const f = H.fin, i0 = Math.round(L * 0.05);
     if (f && H.form !== 'fish') for (let j = 0; j <= f + 2; j++) { const hh = Math.round(f * (1 - j / (f + 2))), top = col[Math.min(L - 1, i0 + j)][0]; for (let k = 1; k <= hh; k++) hl.set(x0 + i0 + j, top - k, k === hh ? shade(P.c2, 0.3) : P.c2); }
     if (H.form === 'fish') { hl.disc(x0 + L * 0.86, cy - 1, 1.2, '#ffffff'); hl.set(x0 + L * 0.86, cy - 1, INK); for (let j = 0; j < 4; j++) hl.set(x0 + L * 0.5 + j, col[Math.round(L * 0.5) + j][0] - 1, P.c2); }
@@ -459,7 +581,8 @@
     if (H.nose === 'hammer') { const hx = x0 + L - 3; hl.set(hx, col[L - 3][0] + 1, INK); hl.set(hx, col[L - 3][1] - 1, INK); }
     // cockpit
     const ic = Math.min(L - 3, Math.round(H.cp * L)), ct = topAt(ic);
-    if (H.dome || H.form === 'saucer') {
+    if (H.nocp) { /* this hull has its own windows */ }
+    else if (H.dome || H.form === 'saucer') {
       const R = H.form === 'saucer' ? 5.5 : 5;
       hl.ell(x0 + ic + 0.5, ct + 1, R, R * 0.85, (x, y, dx, dy) => (dx * dx + dy * dy < 0.25 && dx < 0 && dy < 0 ? '#ffffff' : y < ct - 2 ? '#bff8ff' : '#7ff0ff'), 0.92, 'back');
     } else {
@@ -476,7 +599,7 @@
     hl.outline(ink);
     if (H.glow) hl.halo(hl.mask(), 2, dd => [H.glow, dd < 1.5 ? 0.5 : 0.22]);
     s.blit(hl, 0, 0);
-    const fr = surf(SW, SH);
+    if (FM && FM.front) FM.front(K);
     if (Wg.shape === 'ring') fr.ring(x0 + L * 0.45, cy, 4, H.m + 4, 2, wc, 1, 'front');
     if (H.form === 'ring') fr.ring(x0 + L * 0.5, cy, 3.5, H.m + 6, 2, P.c2, 1, 'front');
     fr.outline(ink); s.blit(fr, 0, 0);
