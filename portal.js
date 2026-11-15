@@ -64,11 +64,13 @@
     if (r.level) return (v.lv || 1) >= r.level;
     return true;
   }
+  const priceOf = (v, it) => (D.priceOf ? D.priceOf(it, v.c || '') : it.price);
+  const offOf = (v, it) => (D.offOf ? D.offOf(it, v.c || '') : 0);
   function block(v, it) {
     if (owns(v, it)) return '';
     if (it.signature) { if (it.id in v.sigs && v.sigs[it.id] !== '') return 'taken'; if (mySig(v)) return 'one'; }
     if (it.req && !reqOk(v, it.req)) return 'req';
-    if (v.dust < it.price) return 'dust';
+    if (v.dust < priceOf(v, it)) return 'dust';
     return '';
   }
   // What the page shows: the record, with the requests that are on their way already done.
@@ -84,7 +86,7 @@
       const it = e.item ? D.byId.get(e.item) : null;
       if (e.kind === 'prac') { const x = Math.max(0, Math.min(e.right || 0, max - used)); used += x; v.pendXp += x; }
       else if (e.kind === 'buy' && it && !block(v, it)) {
-        v.dust -= it.price; v.own.push(it.id); v.pendItems.add(it.id); v.wish = v.wish.filter(x => x !== it.id);
+        v.dust -= priceOf(v, it); v.own.push(it.id); v.pendItems.add(it.id); v.wish = v.wish.filter(x => x !== it.id);
         if (equipable(it)) v.eq[it.slot] = it.id;
         if (it.signature) v.sigs[it.id] = '';
       } else if (e.kind === 'equip') { if (e.item) v.eq[e.slot] = e.item; else delete v.eq[e.slot]; }
@@ -427,11 +429,16 @@
       head.appendChild(fc);
     }
     page.appendChild(head);
+    if (D.offers && shop === 'ship' && g === sh.groups[0][0] && shopView === 'all') {
+      const op = el('article', 'panel offers'); op.appendChild(el('h2', '', 'Today\'s offers'));
+      const og = el('div', 'grid'); [...D.offers(v.c || '').keys()].map(id => D.byId.get(id)).filter(Boolean).forEach(it => og.appendChild(tile(v, it)));
+      op.appendChild(og); page.appendChild(op);
+    }
     const grid = el('div', 'grid');
     let list = all;
     if (shopView === 'can') list = all.filter(it => !owns(v, it) && !block(v, it));
     else if (shopView === 'new') list = all.filter(it => it.nu);
-    else if (shopView === 'cheap') list = all.slice().sort((a, b) => a.price - b.price);
+    else if (shopView === 'cheap') list = all.slice().sort((a, b) => priceOf(v, a) - priceOf(v, b));
     list.forEach(it => grid.appendChild(tile(v, it)));
     if (!list.length) grid.appendChild(el('p', 'muted', shopView === 'can' ? 'Nothing here you can buy now. Earn more Star Coins!' : 'Nothing new here.'));
     page.appendChild(grid);
@@ -454,8 +461,10 @@
     else if (own) st = on ? useWord(it) : it.shop === 'cards' ? 'In your collection' : 'Owned';
     else if (why === 'taken') st = 'Taken';
     else if (why === 'req') st = '🔒 ' + coins(it.price);
-    else st = coins(it.price);
-    b.append(th, el('span', 'iname', it.name), el('span', 'ist', st));
+    else st = coins(priceOf(v, it));
+    const off = own || pend ? 0 : offOf(v, it), stEl = el('span', 'ist', st);
+    if (off && why !== 'req' && why !== 'taken') { th.appendChild(el('span', 'sale', '−' + off + '%')); stEl.prepend(el('s', '', String(it.price)), ' '); }
+    b.append(th, el('span', 'iname', it.name), stEl);
     b.addEventListener('click', () => { openId = it.id; talk = null; renderSheet(); $('sheet').showModal(); });
     return b;
   }
@@ -488,7 +497,7 @@
     const desc = el('p', 'desc', it.desc + ' ');
     const l = el('button', 'btn btn-ghost', '🔊'); l.type = 'button'; l.style.minHeight = '36px'; l.setAttribute('aria-label', 'Listen'); l.addEventListener('click', () => say(it.name + '. ' + it.desc));
     desc.appendChild(l); sh.appendChild(desc);
-    sh.appendChild(el('p', 'price', pend ? 'On its way' : own ? (on ? useWord(it) : it.shop === 'cards' ? 'In your collection' : 'You own it') : coins(it.price)));
+    sh.appendChild(el('p', 'price', pend ? 'On its way' : own ? (on ? useWord(it) : it.shop === 'cards' ? 'In your collection' : 'You own it') : coins(priceOf(v, it)) + (offOf(v, it) ? '  (today only: −' + offOf(v, it) + '%)' : '')));
     const acts = el('div', 'acts'); sh.appendChild(acts);
     const btn = (label, cls2, fn) => { const b = el('button', 'btn ' + (cls2 || ''), label); b.type = 'button'; b.addEventListener('click', fn); acts.appendChild(b); return b; };
     let note = '';
@@ -497,11 +506,11 @@
       if (equipable(it) && !on) btn(home === 'profile' ? 'Put it on my card' : home === 'ship' ? 'Put it on my ship' : home === 'cabin' ? 'Put it in my cabin' : 'Wear it', 'btn-gold', () => send({ kind: 'equip', slot: it.slot, item: it.id }));
       else if (equipable(it) && on && it.rarity !== 'starter') btn('Take it off', '', () => send({ kind: 'equip', slot: it.slot, item: null }));
     } else if (!talk) {
-      if (why === 'dust') note = 'You need ' + coins(it.price - v.dust) + ' more. Practise and read on BookR to earn more!';
+      if (why === 'dust') note = 'You need ' + coins(priceOf(v, it) - v.dust) + ' more. Practise and read on BookR to earn more!';
       else if (why === 'taken') note = v.sigs[it.id] + ' owns this treasure.';
       else if (why === 'one') note = 'You already have a signature treasure: ' + D.byId.get(mySig(v)).name + '.';
       else if (why === 'req') note = 'You can buy this when you have ' + D.reqText(it.req) + '.';
-      if (!why) btn('Buy for ' + coins(it.price), 'btn-gold', () => {
+      if (!why) btn('Buy for ' + coins(priceOf(v, it)), 'btn-gold', () => {
         if (cls && cls.shop && cls.shop.talk === false) { buy(it); return; }
         const L = D.buyLines(it);
         talk = { lines: shuffle([L.right].concat(L.wrong)), right: L.right, wrong: new Set(), say: 'Beep! What would you like? Choose the right sentence.', mood: 'happy' };
@@ -533,6 +542,7 @@
     const ship = el('article', 'panel');
     ship.appendChild(el('h2', '', 'My ship'));
     const hg = el('div', 'hangar'), sc = el('canvas', 'px'); sc.id = 'myShip'; A.ship(sc, v.eq, { t: tick }); hg.appendChild(sc); ship.appendChild(hg);
+    if (D.shipName) { const nm = D.shipName(v.eq), n = v.own.filter(id => { const it = D.byId.get(id); return it && it.rarity !== 'starter'; }).length; ship.appendChild(el('p', 'shipname', nm || 'Your ship has no name yet. Name it in the Star Bazaar at school!')); ship.appendChild(el('p', 'muted small', 'Bazaar rank: ' + D.rankOf(n).name)); }
     const cab = el('article', 'panel cabin');
     cab.appendChild(el('h2', '', 'My cabin'));
     const cc = el('canvas', 'px'); cc.id = 'myCabin'; A.cabin(cc, v.eq, { cid: v.cr, stage: v.st || 1, wear: pickEq(v.eq, WEAR), hat: v.hat, t: tick }); cab.appendChild(cc);

@@ -517,4 +517,33 @@
   D.SHIP_SLOTS = ['hull', 'wing', 'engine', 'paint', 'decal', 'trail'];
   D.CABIN_SLOTS = ['wall', 'floor', 'window', 'bed', 'desk', 'lamp', 'plant', 'shelf', 'poster', 'rug', 'gadget', 'pet', 'ceiling'];
   D.RARE5 = RARE5;
+
+  // ---------- 7.7: today's offers, ship names and collector ranks ----------
+  const hash = t => { let h = 2166136261; for (let i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  const rngOf = seed => { let x = seed || 0x9e3779b9; return () => { x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0; return x / 4294967296; }; };
+  D.dayKey = d => { d = d || new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); };
+  // Six things are cheaper every day, the same six for the whole class (and on the voyagers' pages at home).
+  const offerCache = new Map();
+  D.offers = (c, day) => {
+    day = day || D.dayKey();
+    const key = c + '|' + day;
+    if (!offerCache.has(key)) {
+      if (offerCache.size > 40) offerCache.clear();
+      const r = rngOf(hash('offers|' + key)), out = new Map();
+      const ok = i => !i.signature && i.rarity !== 'starter' && !i.req && i.price >= 60;
+      const take = pool => { for (let n = 0; n < 20 && pool.length; n++) { const it = pool[Math.floor(r() * pool.length)]; if (!out.has(it.id)) { out.set(it.id, [20, 25, 25, 30, 40][hash(it.id + key) % 5]); return; } } };
+      ['ship', 'wear', 'cards', 'cabin', 'wear', 'ship'].forEach(sh => take(items.filter(i => i.shop === sh && ok(i))));
+      offerCache.set(key, out);
+    }
+    return offerCache.get(key);
+  };
+  D.offOf = (it, c, day) => D.offers(c, day).get(it.id) || 0;
+  D.priceOf = (it, c, day) => { const o = D.offOf(it, c, day); return o ? Math.max(10, Math.round((it.price * (100 - o)) / 500) * 5) : it.price; };
+  // A ship's name is two English words the voyager chooses: "The Brave Comet".
+  D.SHIP_ADJ = ['Brave', 'Happy', 'Silver', 'Golden', 'Fast', 'Quiet', 'Lucky', 'Clever', 'Mighty', 'Tiny', 'Shiny', 'Friendly', 'Funny', 'Sleepy', 'Wild', 'Cosmic', 'Bright', 'Frozen', 'Royal', 'Secret'];
+  D.SHIP_NOUN = ['Comet', 'Star', 'Falcon', 'Dolphin', 'Dragon', 'Rocket', 'Moon', 'Tiger', 'Arrow', 'Whale', 'Eagle', 'Storm', 'Panda', 'Voyager', 'Dream', 'Thunder', 'Rainbow', 'Planet', 'Wizard', 'Explorer'];
+  D.shipName = eq => { const m = /^(\d+)\|(\d+)$/.exec((eq && eq.shipname) || ''); return m && D.SHIP_ADJ[+m[1]] && D.SHIP_NOUN[+m[2]] ? 'The ' + D.SHIP_ADJ[+m[1]] + ' ' + D.SHIP_NOUN[+m[2]] : ''; };
+  // Collector ranks: by the number of things a voyager owns (the starter things do not count).
+  D.RANKS = [[0, 'New Shopper'], [3, 'Collector'], [10, 'Star Trader'], [25, 'Treasure Hunter'], [50, 'Space Merchant'], [100, 'Galaxy Tycoon'], [200, 'Legend of the Bazaar']];
+  D.rankOf = n => { let i = 0; D.RANKS.forEach((r, k) => { if (n >= r[0]) i = k; }); const next = D.RANKS[i + 1] || null; return { i, name: D.RANKS[i][1], n, from: D.RANKS[i][0], next: next ? next[0] : null, nextName: next ? next[1] : '' }; };
 })(typeof self !== 'undefined' ? self : globalThis);
