@@ -186,7 +186,7 @@
     bazaar: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L21 9l-5 4.6L17.6 21 12 17.3 6.4 21 8 13.6 3 9l6.4-.4z"/></svg>',
     mine: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12c-2-4-5-7-9-8 1 2 1 4 0 6L4 14l2 2-2 4 4-2 2 2 4-8c2-1 4-1 6 0z"/></svg>'
   };
-  const TABS = [['home', 'Home'], ['practice', 'Practice'], ['speak', 'Speak'], ['homework', 'Homework'], ['bazaar', 'Bazaar'], ['mine', 'My stuff']];
+  const TABS = [['home', 'Home'], ['practice', 'Practice'], ['speak', 'Captain'], ['homework', 'Homework'], ['bazaar', 'Bazaar'], ['mine', 'My stuff']];
   function frameOn(node, it) {
     node.classList.toggle('framed', !!it);
     if (!it) return;
@@ -226,16 +226,18 @@
   let speakRoot = null;
   function pageSpeak(page, v) {
     const K = self.CQSpeak;
-    const head = el('article', 'panel'); head.append(el('h2', '', 'Speak Up'), el('p', 'muted', 'Listen, then say the sentence into your microphone. Every right sentence is 1 XP (up to 5 XP a day at home).'));
+    const head = el('article', 'panel'); const sp = (rec && rec.speak) || { x: 0, max: 10 };
+    head.append(el('h2', '', 'Your Captain Speaking'), el('p', 'muted', '"This is your captain speaking!" Listen, then say the sentence into your microphone, loud and clear. Every right sentence is 1 XP.'), el('p', 'shipname', sp.x + ' / ' + sp.max + ' XP today'));
     page.appendChild(head);
     if (!K) { page.appendChild(el('p', 'muted', 'Speaking practice is not ready on this page yet.')); return; }
     if (!speakRoot) {
       speakRoot = el('div', 'panel');
       K.mount(speakRoot, {
+        intro: 'Captain, your crew is listening!',
         onRound: async r => {
           if (!r.checked) return 'Good practice! XP is only for sentences the microphone checks.';
           if (!r.right) return 'No XP this time. Try again!';
-          const ok = await send({ kind: 'speak', n: r.n, right: r.right });
+          const ok = await send({ kind: 'speak', n: r.n, right: r.right, mode: r.mode });
           return ok ? 'Sent to your teacher\'s board: up to +' + r.right + ' XP.' : 'Could not send it. Check the internet and play again.';
         }
       });

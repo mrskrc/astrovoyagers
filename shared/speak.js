@@ -1,4 +1,4 @@
-/* ASTROVOYAGERS · Speak Up (7.11)
+/* ASTROVOYAGERS · Your Captain Speaking (7.11)
    Speaking practice at A2 level. A voyager listens, says the sentence into the microphone and the
    browser checks it word by word. Five kinds of round:
      echo     listen and repeat
@@ -6,7 +6,7 @@
      order    the words are mixed up: say them in the right order
      answer   answer a question with a short answer
      twister  tongue twisters, for fun
-   Shared by Star Base (the board) and the student portal. No Turkish anywhere.
+   It lives on the student portal (a voyager signs in with the voyager code); Star Base only shows who spoke. No Turkish anywhere.
    In a sentence, the word between * * is the one taken out in a "gap" round. */
 (() => {
   'use strict';
@@ -287,6 +287,7 @@
         card.append(el('p', 'sk-kick', M.name), el('h2', 'sk-big', M.how));
         const who = opts.title ? opts.title() : '';
         if (who) card.appendChild(el('p', 'sk-who', who));
+        if (opts.intro) card.appendChild(el('p', 'sk-who', opts.intro));
         card.appendChild(el('p', 'sk-note', micBroken ? (opts.judge ? 'This computer cannot hear. The teacher decides with the two buttons.' : 'This device cannot check your voice. You can still listen and repeat.') : 'Five sentences. Three tries for each one. Speak clearly and not too fast.'));
         card.appendChild(btn('Start', 'btn btn-gold sk-start', start));
         stage.appendChild(card);
