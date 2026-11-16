@@ -269,3 +269,27 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
 .tab { font-size: 0.6rem; }
 .sk .btn { min-height: 44px; }
 .tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+
+/* ---------- 7.13: gifts, the squad chest, the fleet, the page for the parents ---------- */
+.pick { min-height: 40px; padding: 6px 14px; border: 0; background: rgba(127, 240, 255, 0.1); color: inherit; font: inherit; font-weight: 700; box-shadow: inset 0 0 0 1.5px rgba(127, 240, 255, 0.35); cursor: pointer; }
+.pick[aria-pressed="true"], .pick[data-armed] { background: #7ff0ff; color: #06102a; }
+.gift, .namer { margin-top: 12px; padding: 12px; background: rgba(255, 122, 217, 0.08); border-left: 3px solid #ff7ad9; display: grid; gap: 8px; }
+.namer { border-left-color: #7ff0ff; background: rgba(127, 240, 255, 0.06); }
+.gift p { margin: 0; font-weight: 600; } .gift-row { display: flex; flex-wrap: wrap; gap: 6px; max-height: 220px; overflow: auto; }
+.chest { border-left: 3px solid var(--tc, #ffd23f); } .bar.big { display: block; height: 16px; } .chest .bar i { background: linear-gradient(90deg, #ffb52e, #ffe9a8); }
+.fleet { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
+.fship { display: grid; justify-items: center; gap: 2px; padding: 8px 6px; background: linear-gradient(180deg, #070b26, #121a48); text-align: center; }
+.fship canvas { width: 100%; height: auto; aspect-ratio: 72 / 40; } .fship span { font-size: 0.72rem; color: #7ff0ff; font-weight: 700; } .fship.mine { box-shadow: inset 0 0 0 2px #ffd23f; }
+.parent-link { justify-self: start; margin-top: 4px; }
+.parent h3 { margin: 18px 0 6px; font-size: 1rem; color: #7ff0ff; } .parent p { margin: 0 0 6px; line-height: 1.5; }
+.pfacts { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.pfact { display: grid; gap: 2px; padding: 10px 12px; background: rgba(127, 240, 255, 0.07); } .pfact span { color: var(--muted); font-size: 0.8rem; font-weight: 700; } .pfact b { font-size: 1.5rem; } .pfact small { color: var(--muted); }
+.pweeks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; height: 150px; align-items: end; }
+.pweek { display: grid; grid-template-rows: auto 1fr auto; justify-items: center; height: 100%; gap: 4px; } .pweek i { width: 60%; align-self: end; background: linear-gradient(180deg, #7ff0ff, #6a5cff); } .pweek span { font-size: 0.75rem; color: var(--muted); font-weight: 700; }
+.ptips { margin: 0; padding-left: 20px; display: grid; gap: 4px; line-height: 1.5; }
+@media (max-width: 640px) { .pfacts { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media print {
+  body { background: #fff !important; color: #111 !important; } .noprint, #tabs, .tabs, header, .parent-link, #toast { display: none !important; }
+  .panel.parent { background: #fff !important; box-shadow: none !important; clip-path: none !important; color: #111 !important; border: 0 !important; }
+  .parent *, .parent h3 { color: #111 !important; text-shadow: none !important; } .pfact { background: #f1f3f8 !important; } .pweek i { background: #4a5ad0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

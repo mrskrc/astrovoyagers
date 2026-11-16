@@ -90,6 +90,9 @@
         if (equipable(it)) v.eq[it.slot] = it.id;
         if (it.signature) v.sigs[it.id] = '';
       } else if (e.kind === 'equip') { if (e.item) v.eq[e.slot] = e.item; else delete v.eq[e.slot]; }
+      else if (e.kind === 'name') v.eq.shipname = e.a + '|' + e.n;
+      else if (e.kind === 'chest' && v.team) { const n = Math.min(e.n || 0, v.dust); v.dust -= n; v.team.fill += n; }
+      else if (e.kind === 'gift' && it) { v.dust -= priceOf(v, it); v.gleft = 0; }
       else if (e.kind === 'wish' && it) { const has = v.wish.includes(it.id); if (e.on && !has) v.wish.push(it.id); if (!e.on && has) v.wish = v.wish.filter(x => x !== it.id); }
     });
     v.homeUsed = used; v.homeMax = max;
@@ -147,7 +150,7 @@
     $('code').value = '';
     $('signMsg').className = 'msg' + (note ? ' err' : ''); $('signMsg').textContent = note || '';
   }
-  function show() { $('signin').hidden = true; $('app').hidden = false; tab = 'home'; render(); window.scrollTo(0, 0); }
+  function show() { $('signin').hidden = true; $('app').hidden = false; tab = 'home'; render(); window.scrollTo(0, 0); hello(); }
 
   // Requests that a board finished: tell the voyager once.
   function news() {
@@ -156,15 +159,26 @@
       if (shown.has(id)) return;
       shown.add(id);
       const it = item && D.byId.get(item);
-      if (!ok && it) out.push('Zib could not finish your order: ' + it.name + (why === 'dust' ? ' (not enough Star Coins).' : why === 'taken' ? ' (another voyager has it).' : '.'));
+      if (!ok && it) out.push('Zib could not finish your order: ' + it.name + (why === 'dust' ? ' (not enough Star Coins).' : why === 'taken' ? ' (another voyager has it).' : why === 'owned' ? ' (your friend has it already).' : why === 'week' ? ' (one gift a week).' : '.'));
     });
+    const gseen = +LS.get('gseen') || 0, fresh = (rec.gifts || []).filter(g => g[2] > gseen);
+    fresh.forEach(g => { const it = D.byId.get(g[0]); if (it) out.push('🎁 A gift from ' + (g[1] || 'a friend') + ': ' + it.name + '!'); });
+    if (fresh.length) LS.set('gseen', Math.max(...fresh.map(g => g[2])));
     LS.set('shown', [...shown].slice(-200));
     if (out.length) toast(out.join(' '), 7000);
   }
 
   // ---------- sending a request ----------
+  function device() { let d = LS.get('dv'); if (!/^[a-z0-9]{8}$/.test(d || '')) { d = ''; while (d.length < 8) d += Math.random().toString(36).slice(2); d = d.slice(0, 8); LS.set('dv', d); } return d; }
+  function hello() { // once for each phone and code, so the teacher can see a code that travels
+    if (!me) return;
+    const said = LS.get('hi') || [], mark = String(me.k).slice(0, 10);
+    if (said.includes(mark)) return;
+    LS.set('hi', said.concat(mark).slice(-10));
+    send({ kind: 'hi' });
+  }
   async function send(e) {
-    e.id = P.rid(12); e.t = Date.now();
+    e.id = P.rid(12); e.t = Date.now(); e.dv = device();
     sent.push(e); render();
     try {
       await api({ op: 'portalSend', k: me.k, id: e.id, d: await P.seal(me.raw, e) });
@@ -218,7 +232,7 @@
     const page = $('page');
     if (tab === 'practice' && quiz) return renderQuiz(); // the round in progress keeps its place
     page.textContent = '';
-    ({ home: pageHome, practice: pagePractice, speak: pageSpeak, homework: pageHomework, bazaar: pageBazaar, mine: pageMine })[tab](page, v);
+    ({ home: pageHome, practice: pagePractice, speak: pageSpeak, homework: pageHomework, bazaar: pageBazaar, mine: pageMine, parent: pageParent })[tab](page, v);
     if ($('sheet').open) renderSheet();
   }
 
@@ -267,7 +281,7 @@
     const ul = el('ul', 'list');
     v.pend.slice(-6).reverse().forEach(e => {
       const it = e.item && D.byId.get(e.item), li = el('li');
-      const what = e.kind === 'prac' ? 'Practice: ' + e.right + '/' + e.n + ' right' : e.kind === 'buy' && it ? 'Bought ' + it.name : e.kind === 'equip' ? 'Changed what you wear' : e.kind === 'wish' && it ? (e.on ? 'Wishlist: ' : 'Off the wishlist: ') + it.name : 'A request';
+      const what = e.kind === 'prac' ? 'Practice: ' + e.right + '/' + e.n + ' right' : e.kind === 'buy' && it ? 'Bought ' + it.name : e.kind === 'equip' ? 'Changed what you wear' : e.kind === 'name' ? 'A new name for your ship' : e.kind === 'chest' ? coins(e.n) + ' for the squad chest' : e.kind === 'gift' && it ? 'A gift: ' + it.name : e.kind === 'hi' ? 'Hello from this device' : e.kind === 'wish' && it ? (e.on ? 'Wishlist: ' : 'Off the wishlist: ') + it.name : 'A request';
       li.append(el('span', 'tag wait', 'On its way'), el('span', '', what));
       ul.appendChild(li);
     });
@@ -285,6 +299,44 @@
     else news.appendChild(ul);
     news.appendChild(el('p', 'muted small', 'Things you do here arrive when a board in your classroom is on. Your class updated this page ' + ago(rec.at) + '.'));
     page.appendChild(news);
+    const pb = el('button', 'btn btn-ghost parent-link', 'For parents: a summary'); pb.type = 'button';
+    pb.addEventListener('click', () => { tab = 'parent'; render(); window.scrollTo(0, 0); });
+    page.appendChild(pb);
+  }
+
+  // ---------- 7.13: a summary for the parents ----------
+  function pageParent(page, v) {
+    const box = el('article', 'panel parent');
+    const p = v.par || { weeks: [0, 0, 0, v.wk || 0], hd: 0, hp: 0, hs: 0, picks: 0 };
+    box.append(el('p', 'eyebrow', 'For parents · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })), el('h2', '', v.n + ' · ' + v.c + ' · English'));
+    box.appendChild(el('p', 'muted', 'ASTROVOYAGERS is the game of our English lessons. Children earn XP when they speak, answer, read and do their homework. Here is how ' + v.n + ' is doing.'));
+    const facts = el('div', 'pfacts');
+    const fact = (k, val, sub) => { const d = el('div', 'pfact'); d.append(el('span', '', k), el('b', '', val)); if (sub) d.appendChild(el('small', '', sub)); facts.appendChild(d); };
+    fact('Level', String(v.lv), v.xp + ' XP in all');
+    fact('This week', '+' + p.weeks[3] + ' XP', p.weeks[3] > p.weeks[2] ? 'More than last week' : p.weeks[3] === p.weeks[2] ? 'The same as last week' : 'Less than last week');
+    fact('Books read', String(v.books || 0), 'on BookR Next');
+    fact('Badges', String((v.badges || []).length), 'for good work');
+    box.appendChild(facts);
+    box.appendChild(el('h3', '', 'XP in the last four weeks'));
+    const chart = el('div', 'pweeks'), top = Math.max(1, ...p.weeks);
+    p.weeks.forEach((x, i) => { const c = el('div', 'pweek'), b = el('i'); b.style.height = Math.max(4, Math.round(100 * x / top)) + '%'; c.append(el('b', '', '+' + x), b, el('span', '', i === 3 ? 'This week' : i === 2 ? 'Last week' : (3 - i) + ' weeks ago')); chart.appendChild(c); });
+    box.appendChild(chart);
+    box.appendChild(el('h3', '', 'Homework'));
+    const hwl = cls ? cls.hw.filter(h => h.checked) : [], done = hwl.filter(h => (v.hwm || {})[h.id] === 'd').length, miss = hwl.filter(h => { const m = (v.hwm || {})[h.id]; return m !== 'd' && m !== 'e'; });
+    box.appendChild(el('p', '', hwl.length ? done + ' of the last ' + plural(hwl.length, 'checked task') + ' done.' + (miss.length ? ' Not done: ' + miss.slice(0, 4).map(h => h.title).join('; ') + '.' : ' Nothing is missing.') : 'No checked homework yet.'));
+    const open = cls ? cls.hw.filter(h => !h.checked) : [];
+    if (open.length) box.appendChild(el('p', '', 'To do now: ' + open.map(h => h.title + ' (due ' + niceDay(h.due) + ')').join('; ') + '.'));
+    box.appendChild(el('h3', '', 'Work at home in the last four weeks'));
+    box.appendChild(el('p', '', p.hd ? 'Practised on ' + plural(p.hd, 'day') + ': ' + plural(p.hp, 'right answer') + ' and ' + plural(p.hs, 'sentence') + ' spoken aloud.' : 'No practice at home yet. Ten minutes a day on this page is enough.'));
+    box.appendChild(el('h3', '', 'How you can help'));
+    const ul = el('ul', 'ptips');
+    ['Ask your child to open this page for ten minutes a day: Practice and Captain.', 'Listen to one BookR book together each week.', 'Ask "What did you learn in English today?" Any answer in English is a success.'].forEach(t => ul.appendChild(el('li', '', t)));
+    box.appendChild(ul);
+    const row = el('div', 'acts noprint'), pr = el('button', 'btn btn-gold', 'Print'), bk = el('button', 'btn btn-ghost', 'Back');
+    pr.type = bk.type = 'button'; pr.addEventListener('click', () => window.print()); bk.addEventListener('click', () => { tab = 'home'; render(); });
+    row.append(pr, bk); box.appendChild(row);
+    box.appendChild(el('p', 'muted small', 'Mr. Şekerci · This page shows only your own child. Updated ' + ago(rec.at) + '.'));
+    page.appendChild(box);
   }
 
   // ---------- homework ----------
@@ -543,6 +595,24 @@
       if (why !== 'taken') btn(v.wish.includes(it.id) ? '♥ On my wishlist' : '♡ Wishlist', 'btn-ghost', () => send({ kind: 'wish', item: it.id, on: !v.wish.includes(it.id) }));
     }
     if (note) sh.appendChild(el('p', 'msg', note));
+    if (!talk && !pend && it.rarity !== 'starter' && !it.signature && !it.req && cls && cls.fleet && rec.sid) {
+      const g = btn('🎁 Give to a friend', 'btn-ghost', () => { giftPick = !giftPick; renderSheet(); });
+      g.setAttribute('aria-pressed', String(giftPick));
+      if (giftPick) {
+        const price = priceOf(v, it), gb = el('div', 'gift');
+        gb.appendChild(el('p', '', !v.gleft ? 'You gave a gift this week. You can give one again next week.' : v.dust < price ? 'A gift costs ' + coins(price) + '. You need ' + coins(price - v.dust) + ' more.' : 'Who is it for? You pay ' + coins(price) + '. One gift a week.'));
+        if (v.gleft && v.dust >= price) {
+          const row = el('div', 'gift-row');
+          cls.fleet.filter(f => f.id !== rec.sid).forEach(f => {
+            const b = el('button', 'pick', f.n); b.type = 'button';
+            b.addEventListener('click', async () => { if (b.dataset.armed) { giftPick = false; const ok = await send({ kind: 'gift', item: it.id, to: f.id }); if (ok) toast('Your gift for ' + f.n + ' is on its way!', 5000); renderSheet(); } else { row.querySelectorAll('.pick').forEach(x => { delete x.dataset.armed; x.textContent = x.dataset.n || x.textContent; }); b.dataset.n = f.n; b.dataset.armed = '1'; b.textContent = 'Give to ' + f.n + '?'; } });
+            row.appendChild(b);
+          });
+          gb.appendChild(row);
+        }
+        sh.appendChild(gb);
+      }
+    }
     if (talk) {
       const tk = el('div', 'talk'), top = el('div', 'talk-top'), z = el('canvas', 'px');
       A.zib(z, talk.mood, tick);
@@ -555,6 +625,7 @@
       sh.appendChild(tk);
     }
   }
+  let giftPick = false, naming = null;
   async function buy(it) {
     const ok = await send({ kind: 'buy', item: it.id, d: D.dayKey ? D.dayKey() : '' });
     talk = ok ? { lines: [], wrong: new Set(), say: any(D.SHOPKEEPER.thanks) + ' Your class board will finish the order.', mood: 'wow', done: true } : null;
@@ -566,7 +637,25 @@
     const ship = el('article', 'panel');
     ship.appendChild(el('h2', '', 'My ship'));
     const hg = el('div', 'hangar'), sc = el('canvas', 'px'); sc.id = 'myShip'; A.ship(sc, v.eq, { t: tick }); hg.appendChild(sc); ship.appendChild(hg);
-    if (D.shipName) { const nm = D.shipName(v.eq), n = v.own.filter(id => { const it = D.byId.get(id); return it && it.rarity !== 'starter'; }).length; ship.appendChild(el('p', 'shipname', nm || 'Your ship has no name yet. Name it in the Star Bazaar at school!')); ship.appendChild(el('p', 'muted small', 'Bazaar rank: ' + D.rankOf(n).name)); }
+    if (D.shipName) { const nm = D.shipName(v.eq), n = v.own.filter(id => { const it = D.byId.get(id); return it && it.rarity !== 'starter'; }).length; ship.appendChild(el('p', 'shipname', nm || 'Your ship has no name yet.')); ship.appendChild(el('p', 'muted small', 'Bazaar rank: ' + D.rankOf(n).name)); }
+    if (D.SHIP_ADJ && rec.sid) { // a board from 7.13 on knows how to name a ship from home
+      if (!naming) { const nb = el('button', 'btn btn-ghost', D.shipName(v.eq) ? 'Change the name' : 'Name my ship'); nb.type = 'button'; nb.addEventListener('click', () => { const m = /^(\d+)\|(\d+)$/.exec(v.eq.shipname || ''); naming = { a: m ? +m[1] : 0, n: m ? +m[2] : 0 }; render(); }); ship.appendChild(nb); }
+      else {
+        const nbx = el('div', 'namer');
+        nbx.appendChild(el('p', 'shipname', 'The ' + D.SHIP_ADJ[naming.a] + ' ' + D.SHIP_NOUN[naming.n]));
+        [['Choose a describing word', D.SHIP_ADJ, 'a'], ['Choose a thing', D.SHIP_NOUN, 'n']].forEach(([label, words, key]) => {
+          nbx.appendChild(el('p', 'eyebrow', label));
+          const row = el('div', 'gift-row');
+          words.forEach((w, k) => { const b = el('button', 'pick', w); b.type = 'button'; b.setAttribute('aria-pressed', String(naming[key] === k)); b.addEventListener('click', () => { naming[key] = k; render(); }); row.appendChild(b); });
+          nbx.appendChild(row);
+        });
+        const acts = el('div', 'acts'), ok = el('button', 'btn btn-gold', 'Save the name'), no = el('button', 'btn btn-ghost', 'Cancel');
+        ok.type = no.type = 'button';
+        ok.addEventListener('click', () => { const e = { kind: 'name', a: naming.a, n: naming.n }; naming = null; say('The ' + D.SHIP_ADJ[e.a] + ' ' + D.SHIP_NOUN[e.n]); send(e); });
+        no.addEventListener('click', () => { naming = null; render(); });
+        acts.append(ok, no); nbx.appendChild(acts); ship.appendChild(nbx);
+      }
+    }
     const cab = el('article', 'panel cabin');
     cab.appendChild(el('h2', '', 'My cabin'));
     const cc = el('canvas', 'px'); cc.id = 'myCabin'; A.cabin(cc, v.eq, { cid: v.cr, stage: v.st || 1, wear: pickEq(v.eq, WEAR), hat: v.hat, t: tick }); cab.appendChild(cc);
@@ -581,7 +670,34 @@
     if (!wl.length) wish.appendChild(el('p', 'empty', 'Tap ♡ on an item in the Bazaar to add it here.'));
     else { const g = el('div', 'grid'); wl.forEach(it => g.appendChild(tile(v, it))); wish.appendChild(g); }
     const cardsGrid = el('div', 'cards'); cardsGrid.append(ship, cards);
-    page.append(cardsGrid, cab, wish);
+    page.append(cardsGrid);
+    if (v.team) {
+      const ch = el('article', 'panel chest'); ch.style.setProperty('--tc', v.team.col);
+      ch.appendChild(el('h2', '', 'Squad chest · ' + v.team.n));
+      const bar = el('span', 'bar big'), f = el('i'); f.style.width = Math.min(100, Math.round(100 * v.team.fill / v.team.goal)) + '%'; bar.appendChild(f);
+      ch.append(bar, el('p', '', coins(v.team.fill) + ' of ' + coins(v.team.goal) + ' · opened ' + (v.team.opened === 1 ? 'once' : v.team.opened + ' times')), el('p', 'muted small', 'Fill it together. When it is full, everyone in your squad gets +10 XP.'));
+      const acts = el('div', 'acts');
+      [10, 25].forEach(n => { const b = el('button', 'btn btn-gold', 'Give ' + coins(n)); b.type = 'button'; b.disabled = v.dust < n; b.addEventListener('click', () => send({ kind: 'chest', n })); acts.appendChild(b); });
+      ch.appendChild(acts); page.appendChild(ch);
+    }
+    if ((v.gifts || []).length) {
+      const gf = el('article', 'panel'); gf.appendChild(el('h2', '', 'Gifts from friends'));
+      const ul = el('ul', 'list');
+      v.gifts.slice().reverse().forEach(g => { const it = D.byId.get(g[0]); if (!it) return; const li = el('li'); li.append(el('span', 'tag ok', '🎁'), el('span', '', it.name + ' from ' + (g[1] || 'a friend'))); ul.appendChild(li); });
+      gf.append(ul, el('p', 'muted small', 'Say: "Thank you! That is very kind."')); page.appendChild(gf);
+    }
+    page.append(cab, wish);
+    if (cls && cls.fleet && cls.fleet.length > 1) {
+      const fl = el('article', 'panel'); fl.appendChild(el('h2', '', 'The fleet of ' + v.c));
+      const g = el('div', 'fleet');
+      cls.fleet.forEach(f => {
+        const mine = f.id === rec.sid, d = el('div', 'fship' + (mine ? ' mine' : '')), sc = el('canvas', 'px');
+        A.ship(sc, mine ? v.eq : f.eq, { t: 1 });
+        d.append(sc, el('b', '', f.n), el('span', '', D.shipName(mine ? v.eq : f.eq) || 'No name yet'));
+        g.appendChild(d);
+      });
+      fl.appendChild(g); page.appendChild(fl);
+    }
   }
 
   // ---------- moving pictures ----------
@@ -609,7 +725,7 @@
       e.target.value = raw.length > 3 ? raw.slice(0, 3) + '-' + raw.slice(3) : raw;
     });
     $('signOut').addEventListener('click', () => signOut());
-    $('sheet').addEventListener('close', () => { openId = null; talk = null; });
+    $('sheet').addEventListener('close', () => { openId = null; talk = null; giftPick = false; });
     const saved = LS.get('me');
     if (saved && saved.url === url && saved.k && saved.raw) {
       me = { k: saved.k, raw: saved.raw };
