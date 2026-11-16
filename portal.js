@@ -179,13 +179,14 @@
 
   // ---------- the page ----------
   const ICONS = {
+    speak: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm7-4h-2a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.9V21h2v-3.1A7 7 0 0 0 19 11z"/></svg>',
     home: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3 2 11h3v9h6v-6h2v6h6v-9h3z"/></svg>',
     practice: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12l4 4v12H4zm2 2v12h12V9h-3V6zm2 5h8v2H8zm0 4h6v2H8z"/></svg>',
     homework: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2h9l5 5v15H6zm2 2v16h10V8h-4V4zm1.5 9.5 1.4-1.4 1.6 1.6 3.6-3.6 1.4 1.4-5 5z"/></svg>',
     bazaar: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.6 6.6L21 9l-5 4.6L17.6 21 12 17.3 6.4 21 8 13.6 3 9l6.4-.4z"/></svg>',
     mine: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12c-2-4-5-7-9-8 1 2 1 4 0 6L4 14l2 2-2 4 4-2 2 2 4-8c2-1 4-1 6 0z"/></svg>'
   };
-  const TABS = [['home', 'Home'], ['practice', 'Practice'], ['homework', 'Homework'], ['bazaar', 'Bazaar'], ['mine', 'My stuff']];
+  const TABS = [['home', 'Home'], ['practice', 'Practice'], ['speak', 'Speak'], ['homework', 'Homework'], ['bazaar', 'Bazaar'], ['mine', 'My stuff']];
   function frameOn(node, it) {
     node.classList.toggle('framed', !!it);
     if (!it) return;
@@ -217,8 +218,29 @@
     const page = $('page');
     if (tab === 'practice' && quiz) return renderQuiz(); // the round in progress keeps its place
     page.textContent = '';
-    ({ home: pageHome, practice: pagePractice, homework: pageHomework, bazaar: pageBazaar, mine: pageMine })[tab](page, v);
+    ({ home: pageHome, practice: pagePractice, speak: pageSpeak, homework: pageHomework, bazaar: pageBazaar, mine: pageMine })[tab](page, v);
     if ($('sheet').open) renderSheet();
+  }
+
+  // ---------- 7.11: speaking practice ----------
+  let speakRoot = null;
+  function pageSpeak(page, v) {
+    const K = self.CQSpeak;
+    const head = el('article', 'panel'); head.append(el('h2', '', 'Speak Up'), el('p', 'muted', 'Listen, then say the sentence into your microphone. Every right sentence is 1 XP (up to 5 XP a day at home).'));
+    page.appendChild(head);
+    if (!K) { page.appendChild(el('p', 'muted', 'Speaking practice is not ready on this page yet.')); return; }
+    if (!speakRoot) {
+      speakRoot = el('div', 'panel');
+      K.mount(speakRoot, {
+        onRound: async r => {
+          if (!r.checked) return 'Good practice! XP is only for sentences the microphone checks.';
+          if (!r.right) return 'No XP this time. Try again!';
+          const ok = await send({ kind: 'speak', n: r.n, right: r.right });
+          return ok ? 'Sent to your teacher\'s board: up to +' + r.right + ' XP.' : 'Could not send it. Check the internet and play again.';
+        }
+      });
+    }
+    page.appendChild(speakRoot);
   }
 
   // ---------- home ----------
@@ -532,7 +554,7 @@
     }
   }
   async function buy(it) {
-    const ok = await send({ kind: 'buy', item: it.id });
+    const ok = await send({ kind: 'buy', item: it.id, d: D.dayKey ? D.dayKey() : '' });
     talk = ok ? { lines: [], wrong: new Set(), say: any(D.SHOPKEEPER.thanks) + ' Your class board will finish the order.', mood: 'wow', done: true } : null;
     renderSheet();
   }

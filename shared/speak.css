@@ -1,0 +1,53 @@
+/* ASTROVOYAGERS · Speak Up: the practice screen itself (the board and the portal share it) */
+.sk { display: grid; gap: 16px; }
+.sk-modes { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.sk-mode, .sk-topic { border: 0; cursor: pointer; color: #dff9ff; background: rgba(10, 20, 54, 0.9); box-shadow: inset 0 0 0 1.5px rgba(127, 240, 255, 0.36); clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px); font: inherit; }
+.sk-mode { display: grid; gap: 2px; padding: 10px 14px; text-align: left; min-height: 58px; }
+.sk-mode b { font-family: "Orbitron", "Exo 2", sans-serif; font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; }
+.sk-mode small { color: #9fb4d8; font-weight: 600; }
+.sk-mode[aria-pressed="true"], .sk-topic[aria-pressed="true"] { box-shadow: inset 0 0 0 2px #ffe48a; background: linear-gradient(180deg, rgba(255, 210, 63, 0.26), rgba(58, 45, 11, 0.9)); color: #fff3c4; }
+.sk-topics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.sk-topic { padding: 7px 12px; font-weight: 700; font-size: 0.92rem; min-height: 38px; }
+.sk-card { position: relative; display: grid; justify-items: center; gap: 14px; padding: 26px 22px 28px; text-align: center; background: radial-gradient(70% 60% at 50% 0%, rgba(127, 240, 255, 0.12), transparent 70%), linear-gradient(180deg, #0b1238, #101a4c); box-shadow: inset 0 0 0 1.5px rgba(127, 240, 255, 0.3); clip-path: polygon(18px 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%, 0 18px); min-height: 380px; align-content: center; }
+.sk-kick { margin: 0; font-family: "Orbitron", "Exo 2", sans-serif; font-size: 0.7rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #7ff0ff; }
+.sk-big { margin: 0; font-family: "Exo 2", system-ui, sans-serif; font-weight: 700; font-size: clamp(1.5rem, 3.2vw, 2.7rem); line-height: 1.25; color: #fff; max-width: 22em; }
+.sk-solve { color: #9ff5c8; }
+.sk-who { margin: 0; font-weight: 700; color: #ffe9a8; font-size: 1.1rem; }
+.sk-note, .sk-model, .sk-tries, .sk-said, .sk-hint { margin: 0; color: #9fb4d8; font-weight: 600; }
+.sk-model { color: #ffe9a8; }
+.sk-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.sk-judge { opacity: 0.75; }
+.sk-dots { display: flex; gap: 8px; }
+.sk-dot { width: 26px; height: 8px; background: rgba(127, 240, 255, 0.18); }
+.sk-dot.now { background: #7ff0ff; box-shadow: 0 0 10px #7ff0ff; } .sk-dot.ok { background: #6fe3b4; } .sk-dot.star { background: #ffd23f; box-shadow: 0 0 10px rgba(255, 210, 63, 0.7); } .sk-dot.no { background: #ff7a88; }
+.sk-chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+.sk-chip { padding: 8px 16px; font-family: "Exo 2", system-ui, sans-serif; font-weight: 700; font-size: clamp(1.2rem, 2.4vw, 2rem); color: #04222e; background: linear-gradient(180deg, #c4faff, #3fc8ef); clip-path: polygon(7px 0, 100% 0, 100% calc(100% - 7px), calc(100% - 7px) 100%, 0 100%, 0 7px); }
+.sk-chip:nth-child(3n) { background: linear-gradient(180deg, #ffe48a, #f4a524); } .sk-chip:nth-child(3n + 1) { background: linear-gradient(180deg, #ffc4ec, #ff7ad9); }
+/* the microphone */
+.sk-mic { position: relative; display: grid; place-items: center; width: 108px; height: 108px; border: 0; border-radius: 50%; cursor: pointer; background: radial-gradient(circle at 35% 30%, #c4faff, #3fc8ef 60%, #1a7fa8); box-shadow: 0 0 0 4px rgba(127, 240, 255, 0.25), 0 0 34px rgba(127, 240, 255, 0.5); transition: transform 0.1s ease; }
+.sk-mic:active { transform: scale(0.95); }
+.sk-mic-ic { font-size: 2.6rem; line-height: 1; }
+.sk-mic i { position: absolute; inset: 0; border-radius: 50%; border: 2px solid #ff7ad9; opacity: 0; pointer-events: none; }
+.sk-mic[data-state="listening"] { background: radial-gradient(circle at 35% 30%, #ffd0f0, #ff7ad9 60%, #b8348a); box-shadow: 0 0 0 4px rgba(255, 122, 217, 0.3), 0 0 40px rgba(255, 122, 217, 0.7); }
+.sk-mic[data-state="listening"] i { animation: sk-wave 1.5s ease-out infinite; } .sk-mic[data-state="listening"] i:nth-of-type(2) { animation-delay: 0.5s; } .sk-mic[data-state="listening"] i:nth-of-type(3) { animation-delay: 1s; }
+.sk-mic[data-state="checking"] { filter: grayscale(0.4); animation: sk-think 0.8s ease-in-out infinite; }
+@keyframes sk-wave { from { transform: scale(1); opacity: 0.9; } to { transform: scale(2); opacity: 0; } }
+@keyframes sk-think { 50% { transform: scale(0.94); } }
+.sk-mic-l { margin: 0; font-family: "Orbitron", "Exo 2", sans-serif; font-size: 0.8rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #dff9ff; }
+/* word by word */
+.sk-fb { display: grid; gap: 6px; padding: 12px 18px; min-width: min(560px, 100%); background: rgba(6, 10, 32, 0.6); border-left: 3px solid #6fe3b4; animation: sk-in 0.3s ease-out; }
+.sk-fb.bad { border-left-color: #ff8a9a; }
+.sk-fb b { font-family: "Orbitron", "Exo 2", sans-serif; letter-spacing: 0.1em; text-transform: uppercase; font-size: 0.9rem; color: #9ff5c8; } .sk-fb.bad b { color: #ffb0ba; }
+.sk-words { margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; font-size: 1.2rem; font-weight: 700; }
+.sk-words .hit { color: #04222e; background: #6fe3b4; padding: 1px 8px; } .sk-words .miss { color: #fff; background: #d8304a; padding: 1px 8px; text-decoration: underline wavy; }
+.sk-heard.bad { margin: 0; color: #ffb0ba; font-weight: 700; }
+@keyframes sk-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.sk-stars { margin: 0; font-size: 3rem; letter-spacing: 0.2em; color: #ffd23f; text-shadow: 0 0 20px rgba(255, 210, 63, 0.6); }
+.sk-xp { margin: 0; font-family: "Orbitron", "Exo 2", sans-serif; font-weight: 800; font-size: 1.2rem; letter-spacing: 0.06em; color: #9ff5c8; }
+.sk-start, .sk-next { min-width: 180px; min-height: 52px; }
+@media (max-width: 900px) { .sk-layout { grid-template-columns: 1fr; } .sk-card { min-height: 320px; padding: 20px 14px; } .sk-mic { width: 92px; height: 92px; } }
+@media (prefers-reduced-motion: reduce) { .sk-mic i, .sk-mic, .sk-fb { animation: none !important; } }
+
+.sk-stop { position: absolute; top: 10px; right: 14px; border: 0; background: none; color: #9fb4d8; font: inherit; font-weight: 700; font-size: 0.85rem; cursor: pointer; padding: 6px 8px; }
+.sk-stop:hover { color: #fff; }
+@media (max-width: 900px) { .sk-playing .sk-menu { display: none; } }
