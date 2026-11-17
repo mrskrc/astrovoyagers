@@ -225,12 +225,12 @@
     if (!nav.childElementCount) TABS.forEach(([k, label]) => {
       const b = el('button', 'tab'); b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.k = k;
       b.innerHTML = ICONS[k]; b.appendChild(el('span', '', label));
-      b.addEventListener('click', () => { if (k === tab) return; tab = k; quiz = null; render(); window.scrollTo(0, 0); });
+      b.addEventListener('click', () => { if (k === tab) return; tab = k; quiz = null; pick.view = ''; stopSay(); render(); window.scrollTo(0, 0); });
       nav.appendChild(b);
     });
     nav.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.k === tab)));
     const page = $('page');
-    if (tab === 'practice' && quiz) return renderQuiz(); // the round in progress keeps its place
+    if (tab === 'practice' && quiz) { if (quiz.hold && quiz.hold.isConnected) return; return renderQuiz(); } // the round in progress keeps its place
     page.textContent = '';
     ({ home: pageHome, practice: pagePractice, speak: pageSpeak, homework: pageHomework, bazaar: pageBazaar, mine: pageMine, parent: pageParent })[tab](page, v);
     if ($('sheet').open) renderSheet();
@@ -260,6 +260,70 @@
   }
 
   // ---------- home ----------
+  // ---------- 7.14: the word of the day, the same word as on the class board ----------
+  // The board takes it from the Oxford books only: the unit of the week if it is an Oxford one,
+  // or else the last Oxford unit the class studied.
+  // (The books a class does not use: the same list as CLASS_SKIP_BOOKS in the extension's store.js.)
+  const CLASS_SKIP_BOOKS = { '5A': ['h1'], '5B': ['h1'], '5C': ['h1'], '5D': ['h1'] };
+  let wodBack = 0, wodSaid = null;
+  function wodRef() {
+    const B = self.CQBook, skip = CLASS_SKIP_BOOKS[rec && rec.c] || [];
+    const ox = r => { const p = r && B.parse(r); return !!(p && p.book.publisher === 'Oxford' && !skip.includes(p.book.id)); };
+    const st = cls && cls.study;
+    if (ox(st)) return st;
+    const t = ((cls && cls.units) || []).slice().reverse().find(ox);
+    if (t) return t;
+    const b = B.books().find(x => x.publisher === 'Oxford' && !skip.includes(x.id));
+    return b && b.units[0] ? B.ref(b.id, b.units[0].id) : st || B.first();
+  }
+  function wodCard() {
+    const box = el('article', 'panel wod'), body = el('div', 'wod-body');
+    box.append(el('p', 'eyebrow', 'Word of the day'), body);
+    body.innerHTML = '<span class="spin"></span>';
+    loadBooks().then(() => drawWod(body)).catch(() => box.remove());
+    return box;
+  }
+  function drawWod(body) {
+    const B = self.CQBook, K = self.CQSpeak, d = new Date(); d.setDate(d.getDate() - wodBack);
+    const w = B.wordOfDay(wodRef(), d);
+    body.textContent = '';
+    if (!w) { body.appendChild(el('p', 'muted', 'No word today.')); return; }
+    body.appendChild(el('b', 'wod-word', w.word));
+    const sent = el('p', 'wod-sent'), at = w.sentence.toLowerCase().indexOf(w.word.toLowerCase());
+    if (at < 0) sent.textContent = w.sentence;
+    else sent.append(document.createTextNode(w.sentence.slice(0, at)), el('mark', '', w.sentence.slice(at, at + w.word.length)), document.createTextNode(w.sentence.slice(at + w.word.length)));
+    body.appendChild(sent);
+    const row = el('div', 'acts'), out = el('p', 'wod-out'); out.setAttribute('role', 'status');
+    row.appendChild(btnOf('🔊 Listen', 'btn btn-cyan', () => say(w.word + '. ' + w.sentence)));
+    row.appendChild(btnOf('🐢 Slowly', 'btn btn-ghost', () => say(w.word + '. ' + w.sentence, true)));
+    if (K && K.canListen()) {
+      const mic = btnOf('🎤 Say it', 'btn btn-gold', async () => {
+        if (mic.disabled) return;
+        mic.disabled = true; stopSay(); out.className = 'wod-out'; out.textContent = 'Say the sentence now…';
+        try {
+          const alts = await K.listen(st => { out.textContent = st === 'checking' ? 'Checking…' : 'Listening… say the sentence.'; });
+          if (!alts.length) { out.textContent = 'I did not hear you. Tap and try again.'; }
+          else {
+            const r = K.score([w.sentence], alts, 0.8);
+            wodSaid = r.ok ? w.word : wodSaid;
+            out.className = 'wod-out ' + (r.ok ? 'ok' : 'bad');
+            out.textContent = r.ok ? (r.perfect ? 'Perfect! Every word was clear.' : 'Well done! You said it.') : 'Almost! I heard: "' + r.heard + '". Listen and try again.';
+          }
+        } catch (e) { out.textContent = /not-allowed|denied/i.test(e.message) ? 'The microphone is off. Allow it in your browser and try again.' : 'The microphone did not work. Try again.'; }
+        mic.disabled = false;
+      });
+      mic.id = 'wodMic';
+      row.appendChild(mic);
+    }
+    body.append(row, out);
+    if (wodSaid === w.word) { out.className = 'wod-out ok'; out.textContent = 'You said this sentence. Well done!'; }
+    const days = el('div', 'chips wod-days');
+    ['Today', 'Yesterday', '2 days ago', '3 days ago', '4 days ago'].forEach((label, k) => {
+      const b = btnOf(label, 'chip', () => { wodBack = k; drawWod(body); }); b.setAttribute('aria-pressed', String(wodBack === k));
+      days.appendChild(b);
+    });
+    body.append(days, el('p', 'muted small', B.unitName(w.ref)));
+  }
   function pageHome(page, v) {
     const cards = el('div', 'cards');
     const wk = el('article', 'panel stat'); wk.append(el('p', 'eyebrow', 'This week'), el('b', '', '+' + v.wk + ' XP'), el('span', 'muted', v.xp + ' XP in all · ' + plural((v.badges || []).length, 'badge')));
@@ -275,6 +339,7 @@
     if (hwOpen[0]) hw.append(el('span', '', hwOpen[0].title + ' · due ' + niceDay(hwOpen[0].due)));
     cards.append(wk, hp, hw);
     page.appendChild(cards);
+    page.appendChild(wodCard());
     // news
     const news = el('article', 'panel');
     news.appendChild(el('h2', '', 'News from your class'));
@@ -362,72 +427,244 @@
   }
 
   // ---------- practice ----------
-  let booksReady = null, quiz = null, pick = { units: '', kind: 'mix' };
+  let booksReady = null, storiesReady = null, quiz = null, pick = { units: '', kind: 'mix', game: 'quiz', view: '' };
+  const loadScript = (src, sorry) => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => bad(new Error(sorry)); document.head.appendChild(s); });
   function loadBooks() {
     if (booksReady) return booksReady;
     const files = ['shared/books/meb5.js', 'shared/books/harmonize1.js', 'shared/books/harmonize2.js', 'shared/books/discover1.js', 'shared/books.js'];
-    booksReady = files.reduce((p, f) => p.then(() => new Promise((ok, bad) => { const s = document.createElement('script'); s.src = f; s.onload = ok; s.onerror = () => bad(new Error('The questions did not load.')); document.head.appendChild(s); })), Promise.resolve());
+    booksReady = files.reduce((p, f) => p.then(() => loadScript(f, 'The questions did not load.')), Promise.resolve());
     booksReady.catch(() => { booksReady = null; });
     return booksReady;
   }
+  function loadStories() {
+    if (self.AVStories) return Promise.resolve();
+    if (!storiesReady) { storiesReady = loadScript('stories.js', 'The stories did not load.'); storiesReady.catch(() => { storiesReady = null; }); }
+    return storiesReady;
+  }
   const KINDS = [['mix', 'Mixed'], ['v', 'Vocabulary'], ['g', 'Grammar'], ['d', 'Dialogue'], ['e', 'Find the mistake'], ['x', 'Odd one out']];
+  // 7.14: more ways to practise. Every game sends its right answers like the quiz (1 XP each, the day's 10 XP).
+  const GAMES = [
+    ['quiz', '❓', 'Quiz', 'Ten questions, choose the answer'],
+    ['spell', '🎧', 'Listen and spell', 'Hear a word and type it'],
+    ['build', '🧩', 'Build the sentence', 'Put the words in the right order'],
+    ['memory', '🃏', 'Memory match', 'Find the word for each sentence'],
+    ['story', '📖', 'Story time', 'Listen to a story, answer five questions']
+  ];
+
+  // ---------- 7.14: the mistake notebook (it lives on this device) ----------
+  const misKey = () => 'mis.' + String(me ? me.k : '').slice(0, 10);
+  const misAll = () => { const m = LS.get(misKey()); return Array.isArray(m) ? m : []; };
+  const misId = q => (q.t === 'sp' ? 's:' : 'q:') + q.ref + '#' + q.i;
+  // ok: the question was answered right (it leaves the notebook); not ok: it goes in. Returns +1, -1 or 0.
+  function misMark(q, ok) {
+    if (!q || !q.ref || q.i == null) return 0;
+    let m = misAll();
+    const id = misId(q), at = m.findIndex(x => x.id === id);
+    if (ok) { if (at < 0) return 0; m.splice(at, 1); LS.set(misKey(), m); return -1; }
+    if (at >= 0) { m[at].n++; m[at].d = todayKey(); LS.set(misKey(), m); return 0; }
+    m.push({ id, r: q.ref, i: q.i, s: q.t === 'sp' ? 1 : 0, a: q.answer, n: 1, d: todayKey() });
+    if (m.length > 60) m = m.slice(-60);
+    LS.set(misKey(), m);
+    return 1;
+  }
+  const SPELL = q => q[0] === 'v' && q[1].includes('___') && /^[A-Za-z]{3,10}$/.test(q[2]);
+  const spellQ = (p, i) => { const q = p.unit.q[i]; return { t: 'sp', i, ref: p.ref, kind: 'Listen and spell', ask: 'Listen and type the word', prompt: q[1], answer: q[2], full: q[1].replace('___', q[2]) }; };
+  // A notebook line → its question again (null when the books have changed since).
+  function misQuestion(x) {
+    const B = self.CQBook, p = B.parse(x.r), raw = p && p.unit.q[x.i];
+    if (!raw) return null;
+    if (x.s) return raw[2] === x.a && SPELL(raw) ? spellQ(p, x.i) : null;
+    const q = B.question(p.unit, x.i, p.ref);
+    return q && q.answer === x.a ? q : null;
+  }
+  function misLive() { // the lines that still have a question; the others are dropped
+    const all = misAll(), live = all.filter(x => misQuestion(x));
+    if (live.length !== all.length) LS.set(misKey(), live);
+    return live;
+  }
+
   function pagePractice(page, v) {
     const box = el('article', 'panel');
-    box.append(el('h2', '', 'Practice'), el('p', 'muted', 'Ten questions from your class\'s units. 1 XP for each right answer, up to 10 XP a day (' + Math.max(0, v.homeMax - v.homeUsed) + ' XP left today).'));
+    box.append(el('h2', '', 'Practice'), el('p', 'muted', 'Choose a game. 1 XP for each right answer, up to 10 XP a day (' + Math.max(0, v.homeMax - v.homeUsed) + ' XP left today).'));
     page.appendChild(box);
     const wait = el('p', 'muted'); wait.innerHTML = '<span class="spin"></span> Loading the questions…';
     box.appendChild(wait);
     loadBooks().then(() => {
-      if (tab !== 'practice' || quiz) return;
+      if (tab !== 'practice' || quiz || !box.isConnected) return;
       wait.remove();
+      if (pick.view === 'mistakes') { box.remove(); return pageMistakes(page); }
       const B = self.CQBook;
       const units = B.parseList((cls && cls.units) || []).map(p => p.ref);
       const study = cls && cls.study && B.parse(cls.study) ? cls.study : units[units.length - 1] || B.first();
       if (!pick.units || !B.parseList(pick.units).length) pick.units = study;
-      box.appendChild(el('p', 'eyebrow', 'Unit'));
-      const uc = el('div', 'chips');
-      const opts = [[study, 'This week: ' + B.unitName(study)]];
-      units.filter(r => r !== study).slice(-6).forEach(r => opts.push([r, B.unitName(r)]));
-      if (units.length > 1) opts.push([units.join(','), 'All my units']);
-      opts.forEach(([r, label]) => { const b = el('button', 'chip', label); b.type = 'button'; b.setAttribute('aria-pressed', String(pick.units === r)); b.addEventListener('click', () => { pick.units = r; render(); }); uc.appendChild(b); });
-      box.appendChild(uc);
-      box.appendChild(el('p', 'eyebrow', 'Questions'));
-      const kc = el('div', 'chips');
-      KINDS.forEach(([k, label]) => { const b = el('button', 'chip', label); b.type = 'button'; b.setAttribute('aria-pressed', String(pick.kind === k)); b.addEventListener('click', () => { pick.kind = k; render(); }); kc.appendChild(b); });
-      box.appendChild(kc);
-      const go = el('button', 'btn btn-gold', 'Start'); go.type = 'button'; go.style.marginTop = '14px';
+      box.appendChild(el('p', 'eyebrow', 'Game'));
+      const gc = el('div', 'games');
+      GAMES.forEach(([k, icon, name, about]) => {
+        const b = el('button', 'opt game'); b.type = 'button'; b.dataset.game = k; b.setAttribute('aria-pressed', String(pick.game === k));
+        const tx = el('span', 'game-tx'); tx.append(el('b', '', name), el('small', '', about));
+        b.append(el('span', 'game-ic', icon), tx);
+        b.addEventListener('click', () => { pick.game = k; render(); });
+        gc.appendChild(b);
+      });
+      box.appendChild(gc);
+      if (pick.game !== 'story') {
+        box.appendChild(el('p', 'eyebrow', 'Unit'));
+        const uc = el('div', 'chips');
+        const opts = [[study, 'This week: ' + B.unitName(study)]];
+        units.filter(r => r !== study).slice(-6).forEach(r => opts.push([r, B.unitName(r)]));
+        if (units.length > 1) opts.push([units.join(','), 'All my units']);
+        opts.forEach(([r, label]) => { const b = el('button', 'chip', label); b.type = 'button'; b.setAttribute('aria-pressed', String(pick.units === r)); b.addEventListener('click', () => { pick.units = r; render(); }); uc.appendChild(b); });
+        box.appendChild(uc);
+      }
+      if (pick.game === 'quiz') {
+        box.appendChild(el('p', 'eyebrow', 'Questions'));
+        const kc = el('div', 'chips');
+        KINDS.forEach(([k, label]) => { const b = el('button', 'chip', label); b.type = 'button'; b.setAttribute('aria-pressed', String(pick.kind === k)); b.addEventListener('click', () => { pick.kind = k; render(); }); kc.appendChild(b); });
+        box.appendChild(kc);
+      }
+      const go = el('button', 'btn btn-gold', 'Start'); go.type = 'button'; go.id = 'pracGo'; go.style.marginTop = '14px';
       go.addEventListener('click', () => startQuiz());
       box.appendChild(go);
+      // the mistake notebook
+      const n = misLive().length, nb = el('article', 'panel notebook');
+      nb.appendChild(el('h2', '', 'My mistake notebook'));
+      nb.appendChild(el('p', n ? '' : 'muted', n ? plural(n, 'question') + ' to try again. A right answer takes a question out of the notebook.' : 'It is empty. Questions you get wrong wait here, so you can try them again.'));
+      if (n) {
+        const row = el('div', 'acts'), again = el('button', 'btn btn-cyan', 'Try my mistakes again'), see = el('button', 'btn btn-ghost', 'See my mistakes');
+        again.type = see.type = 'button'; again.id = 'misGo';
+        again.addEventListener('click', () => startQuiz('mistakes'));
+        see.addEventListener('click', () => { pick.view = 'mistakes'; render(); window.scrollTo(0, 0); });
+        row.append(again, see); nb.appendChild(row);
+      }
+      page.appendChild(nb);
     }).catch(e => { wait.textContent = e.message; });
   }
-  function startQuiz() {
-    const B = self.CQBook;
-    let pool = B.poolList(pick.units, pick.kind, true);
-    if (pool.length < 4) pool = B.poolList(pick.units, 'mix', true);
-    const qs = shuffle(pool).slice(0, 10).map(x => B.question(x.p.unit, x.i, x.p.ref)).filter(Boolean);
-    if (!qs.length) { toast('No questions for this choice.'); return; }
-    quiz = { qs, at: 0, marks: [], picked: null, started: Date.now(), units: pick.units };
-    render();
+  function pageMistakes(page) {
+    const B = self.CQBook, list = misLive().slice().sort((a, b) => b.n - a.n), box = el('article', 'panel notebook');
+    box.append(el('h2', '', 'My mistake notebook'), el('p', 'muted', 'Read the right sentences and listen to them. Then try the questions again.'));
+    const ul = el('ul', 'list mis-list');
+    list.forEach(x => {
+      const q = misQuestion(x), li = el('li'), tx = el('div');
+      const text = q.t === 'x' ? q.full + ' · the odd one: ' + q.answer + (q.reason ? ' (' + q.reason + ')' : '') : q.full;
+      tx.append(el('b', '', text), el('div', 'muted small', q.kind + ' · ' + B.unitName(q.ref) + ' · wrong ' + (x.n === 1 ? 'once' : x.n + ' times')));
+      const l = el('button', 'btn btn-ghost mis-say', '🔊'); l.type = 'button'; l.setAttribute('aria-label', 'Listen'); l.addEventListener('click', () => say(q.t === 'x' ? q.answer : q.full));
+      li.append(tx, l); ul.appendChild(li);
+    });
+    box.appendChild(ul);
+    const row = el('div', 'acts'), again = el('button', 'btn btn-cyan', 'Try my mistakes again'), back = el('button', 'btn', 'Back'), wipe = el('button', 'btn btn-ghost', 'Empty the notebook');
+    again.type = back.type = wipe.type = 'button';
+    again.addEventListener('click', () => { pick.view = ''; startQuiz('mistakes'); });
+    back.addEventListener('click', () => { pick.view = ''; render(); });
+    wipe.addEventListener('click', () => { if (wipe.dataset.armed) { LS.set(misKey(), []); pick.view = ''; render(); } else { wipe.dataset.armed = '1'; wipe.textContent = 'Tap again to empty it'; } });
+    if (list.length) row.append(again);
+    row.append(back); if (list.length) row.append(wipe);
+    box.appendChild(row); page.appendChild(box);
   }
-  function say(text) {
+
+  // One memory board: four words (left) and their gap sentences (right), face down.
+  function memoryBoard(r) {
+    const cards = [];
+    r.pairs.forEach((p, k) => { cards.push({ k, side: 'w', text: p.word }); cards.push({ k, side: 's', text: p.prompt }); });
+    return { t: 'mem', kind: 'Memory match', ask: 'Open a word and a sentence. Do they go together?', pairs: r.pairs, words: shuffle(cards.filter(c => c.side === 'w')), sents: shuffle(cards.filter(c => c.side === 's')), sel: null, miss: null, errors: 0, turns: 0, marks: r.pairs.length };
+  }
+  async function startQuiz(how) {
+    const B = self.CQBook, game = how === 'mistakes' ? 'mistakes' : pick.game;
+    let qs = [], story = null;
+    if (game === 'mistakes') qs = shuffle(misLive().slice().sort((a, b) => b.n - a.n).slice(0, 10)).map(misQuestion).filter(Boolean);
+    else if (game === 'spell') {
+      const bag = [], seen = new Set();
+      B.parseList(pick.units).forEach(p => p.unit.q.forEach((q, i) => { if (SPELL(q)) bag.push([p, i]); }));
+      shuffle(bag).forEach(([p, i]) => { const w = p.unit.q[i][2].toLowerCase(); if (qs.length < 10 && !seen.has(w)) { seen.add(w); qs.push(spellQ(p, i)); } });
+    } else if (game === 'build') qs = shuffle(B.poolList(pick.units, 'o')).slice(0, 10).map(x => B.question(x.p.unit, x.i, x.p.ref)).filter(Boolean);
+    else if (game === 'memory') qs = B.gameRound(pick.units, 'mt', 2).map(memoryBoard);
+    else if (game === 'story') {
+      try { await loadStories(); } catch (e) { toast(e.message); return; }
+      const all = self.AVStories || [], key = 'st.' + String(me ? me.k : '').slice(0, 10);
+      let done = (LS.get(key) || []).filter(id => all.some(s => s.id === id));
+      if (done.length >= all.length) done = done.slice(-1); // every story heard: start again, but not with the last one
+      story = shuffle(all.filter(s => !done.includes(s.id)))[0];
+      if (story) { LS.set(key, done.concat(story.id)); qs = story.q.map(q => ({ t: 'st', kind: 'Story time', ask: 'Listen to the story and answer', prompt: q[0], answer: q[1], options: shuffle(q.slice(1)), full: '' })); }
+    } else {
+      let pool = B.poolList(pick.units, pick.kind, true);
+      if (pool.length < 4) pool = B.poolList(pick.units, 'mix', true);
+      qs = shuffle(pool).slice(0, 10).map(x => B.question(x.p.unit, x.i, x.p.ref)).filter(Boolean);
+    }
+    if (!qs.length) { toast(game === 'mistakes' ? 'Your notebook is empty.' : 'No questions for this choice.'); return; }
+    quiz = { game, qs, at: 0, marks: [], total: qs.reduce((a, q) => a + (q.marks || 1), 0), picked: null, started: Date.now(), units: pick.units, story, added: 0, fixed: 0 };
+    stopSay();
+    render(); window.scrollTo(0, 0);
+  }
+  const enVoice = () => { const vs = speechSynthesis.getVoices(); return vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)); };
+  function stopSay() { try { if (self.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* no voice */ } }
+  // Long texts are spoken sentence by sentence (some phones stop in the middle of a long one).
+  function say(text, slow) {
     if (!text || !self.speechSynthesis) return;
-    try { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(text); const vv = speechSynthesis.getVoices().find(x => /^en(-|_)GB/i.test(x.lang)) || speechSynthesis.getVoices().find(x => /^en/i.test(x.lang)); if (vv) u.voice = vv; u.lang = vv ? vv.lang : 'en-GB'; u.rate = 0.92; speechSynthesis.speak(u); } catch (e) { /* no voice */ }
+    try {
+      speechSynthesis.cancel();
+      const vv = enVoice();
+      (String(text).match(/[^.!?]+[.!?]*/g) || [text]).map(s => s.trim()).filter(Boolean).forEach(part => {
+        const u = new SpeechSynthesisUtterance(part);
+        if (vv) u.voice = vv;
+        u.lang = vv ? vv.lang : 'en-GB'; u.rate = slow ? 0.62 : 0.92;
+        speechSynthesis.speak(u);
+      });
+    } catch (e) { /* no voice */ }
+  }
+  const btnOf = (label, cl, fn) => { const b = el('button', cl, label); b.type = 'button'; b.addEventListener('click', fn); return b; };
+  // The current question is over: right or wrong, into or out of the notebook.
+  function settle(ok) {
+    const q = quiz.qs[quiz.at];
+    quiz.done = true; quiz.ok = ok; quiz.marks.push(ok); quiz.hold = null;
+    if (!ok && !quiz.missed) { quiz.missed = true; if (misMark(q, false) > 0) quiz.added++; }
+    else if (ok && !quiz.missed && misMark(q, true) < 0) quiz.fixed++;
+    renderQuiz();
+  }
+  function slip() { // a first wrong try: the question goes into the notebook, one more try is left
+    const q = quiz.qs[quiz.at];
+    quiz.tries = 1;
+    if (!quiz.missed) { quiz.missed = true; if (misMark(q, false) > 0) quiz.added++; }
+  }
+  function nextQ() {
+    quiz.at++;
+    ['picked', 'done', 'ok', 'tries', 'missed', 'typed', 'hint', 'said', 'slots', 'lock', 'hold', 'note'].forEach(k => { delete quiz[k]; });
+    quiz.picked = null;
+    renderQuiz(); window.scrollTo(0, 0);
   }
   function renderQuiz() {
     const page = $('page'); page.textContent = '';
+    if (quiz.story && quiz.at < quiz.qs.length) page.appendChild(storyPanel());
     const box = el('article', 'panel q-card');
     page.appendChild(box);
     if (quiz.at >= quiz.qs.length) return endQuiz(box);
     const q = quiz.qs[quiz.at];
-    const top = el('div', 'q-top'), dots = el('div', 'dots');
-    quiz.qs.forEach((x, i) => dots.appendChild(el('i', i < quiz.marks.length ? (quiz.marks[i] ? 'r' : 'w') : i === quiz.at ? 'now' : '')));
-    top.append(el('span', '', q.kind + ' · ' + (quiz.at + 1) + '/' + quiz.qs.length), dots);
+    const top = el('div', 'q-top'), dots = el('div', 'dots'), at = quiz.marks.length;
+    for (let i = 0; i < quiz.total; i++) dots.appendChild(el('i', i < at ? (quiz.marks[i] ? 'r' : 'w') : i === at ? 'now' : ''));
+    top.append(el('span', '', (quiz.game === 'mistakes' ? 'My mistakes · ' : '') + (q.t === 'o' ? 'Build the sentence' : q.kind) + ' · ' + (quiz.at + 1) + '/' + quiz.qs.length), dots);
     box.appendChild(top);
     box.appendChild(el('p', 'eyebrow', q.ask));
+    if (q.t === 'mem') return renderMemory(box, q);
+    if (q.t === 'sp') renderSpell(box, q);
+    else if (q.t === 'o') renderBuild(box, q);
+    else renderChoice(box, q);
+    if (quiz.done) {
+      const ok = quiz.ok, fb = el('div', 'feedback ' + (ok ? 'right' : 'wrong'));
+      const praise = any(['Right!', 'Well done!', 'Great!', 'Super!']);
+      fb.textContent = q.t === 'sp' ? (ok ? praise : 'The word: ' + q.answer + '.') + ' ' + q.full
+        : q.t === 'o' ? (ok ? praise : 'The sentence: ' + q.answer)
+        : (ok ? praise : 'The answer: ' + q.answer + (/[.!?]$/.test(q.answer) ? '' : '.')) + (q.t === 'x' && q.reason ? ' ' + q.reason : '') + (q.t !== 'x' && q.full ? ' ' + q.full : '');
+      box.appendChild(fb);
+      const row = el('div', 'acts');
+      if (q.t !== 'x' && q.full) row.appendChild(btnOf('🔊 Listen', 'btn btn-ghost', () => say(q.full)));
+      const nx = btnOf(quiz.at + 1 < quiz.qs.length ? 'Next' : 'See my score', 'btn btn-gold', nextQ); nx.id = 'qNext';
+      row.appendChild(nx); box.appendChild(row);
+      setTimeout(() => nx.focus(), 30);
+    }
+  }
+  function renderChoice(box, q) {
     const text = el('p', 'q-text');
     if (q.t === 'e') q.prompt.split(/(\[[^\]]+\])/).forEach(part => { const m = /^\[(.+)\]$/.exec(part); text.appendChild(m ? el('mark', '', m[1]) : document.createTextNode(part)); });
-    else if (q.t === 'x') text.textContent = q.prompt;
-    else q.prompt.split('___').forEach((part, i) => { if (i) text.appendChild(el('span', 'gap', quiz.picked != null ? q.answer : ' ')); text.appendChild(document.createTextNode(part)); });
+    else if (q.t === 'x' || q.t === 'st') text.textContent = q.prompt;
+    else q.prompt.split('___').forEach((part, i) => { if (i) text.appendChild(el('span', 'gap', quiz.picked != null ? q.answer : ' ')); text.appendChild(document.createTextNode(part)); });
     box.appendChild(text);
     const opts = el('div', 'opts');
     q.options.forEach(o => {
@@ -437,40 +674,154 @@
       opts.appendChild(b);
     });
     box.appendChild(opts);
-    if (quiz.picked != null) {
-      const ok = quiz.picked === q.answer, fb = el('div', 'feedback ' + (ok ? 'right' : 'wrong'));
-      fb.textContent = (ok ? any(['Right!', 'Well done!', 'Great!', 'Super!']) : 'The answer: ' + q.answer + '.') + (q.t === 'x' && q.reason ? ' ' + q.reason : '') + (q.t !== 'x' ? ' ' + q.full : '');
-      box.appendChild(fb);
-      const row = el('div', 'acts');
-      if (q.t !== 'x') { const l = el('button', 'btn btn-ghost', '🔊 Listen'); l.type = 'button'; l.addEventListener('click', () => say(q.full)); row.appendChild(l); }
-      const nx = el('button', 'btn btn-gold', quiz.at + 1 < quiz.qs.length ? 'Next' : 'See my score'); nx.type = 'button';
-      nx.addEventListener('click', () => { quiz.at++; quiz.picked = null; renderQuiz(); window.scrollTo(0, 0); });
-      row.appendChild(nx); box.appendChild(row);
-      setTimeout(() => nx.focus(), 30);
-    }
   }
   function answer(o) {
     if (!quiz || quiz.picked != null) return;
-    const q = quiz.qs[quiz.at];
-    quiz.picked = o; quiz.marks.push(o === q.answer);
+    quiz.picked = o;
+    settle(o === quiz.qs[quiz.at].answer);
+  }
+  // Listen and spell: the word is spoken, the sentence is the clue, two tries.
+  function renderSpell(box, q) {
+    const text = el('p', 'q-text');
+    q.prompt.split('___').forEach((part, i) => { if (i) text.appendChild(el('span', 'gap', quiz.done ? q.answer : ' ')); text.appendChild(document.createTextNode(part)); });
+    box.appendChild(text);
+    if (!quiz.said) { quiz.said = true; say(q.answer); }
+    if (quiz.done) return;
+    const tools = el('div', 'acts');
+    tools.append(btnOf('🔊 Listen', 'btn btn-cyan', () => say(q.answer)), btnOf('🐢 Slowly', 'btn btn-ghost', () => say(q.answer, true)),
+      btnOf('🔤 Show the letters', 'btn btn-ghost', () => { quiz.hint = quiz.hint || shuffle(q.answer.toLowerCase().split('')).join(' '); quiz.hold = null; renderQuiz(); }));
+    box.appendChild(tools);
+    if (quiz.hint) box.appendChild(el('p', 'letters', quiz.hint));
+    const form = el('form', 'spell'), inp = el('input', 'spell-in'), ok = el('button', 'btn btn-gold', 'Check');
+    inp.type = 'text'; inp.id = 'spellIn'; inp.maxLength = 14; inp.value = quiz.typed || ''; inp.placeholder = q.answer.length + ' letters';
+    inp.setAttribute('autocapitalize', 'none'); inp.setAttribute('autocomplete', 'off'); inp.setAttribute('autocorrect', 'off'); inp.spellcheck = false;
+    inp.setAttribute('aria-label', 'Type the word you hear');
+    inp.addEventListener('input', () => { quiz.typed = inp.value; });
+    ok.type = 'submit';
+    form.append(inp, ok);
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const typed = inp.value.trim().toLowerCase();
+      if (!typed) { inp.focus(); return; }
+      if (typed === q.answer.toLowerCase()) return settle(true);
+      if (quiz.tries) return settle(false);
+      slip(); quiz.typed = inp.value; quiz.note = 'Not yet. Listen again and try once more.';
+      say(q.answer, true); quiz.hold = null; renderQuiz();
+    });
+    box.appendChild(form);
+    if (quiz.note) box.appendChild(el('p', 'feedback wrong', quiz.note));
+    quiz.hold = inp; // the page is not drawn again while the voyager types
+    setTimeout(() => { if (inp.isConnected) inp.focus(); }, 30);
+  }
+  // Build the sentence: tap the words into the line. After a first wrong try the right words stay.
+  function renderBuild(box, q) {
+    const n = q.words.length;
+    if (!quiz.slots) { quiz.slots = new Array(n).fill(null); quiz.lock = new Array(n).fill(false); }
+    const line = el('div', 'build-line' + (quiz.done ? (quiz.ok ? ' right' : ' wrong') : ''));
+    quiz.slots.forEach((ti, pos) => {
+      if (ti == null) { line.appendChild(el('span', 'slot', '')); return; }
+      const b = el('button', 'chip tile' + (quiz.lock[pos] ? ' locked' : ''), q.tiles[ti]); b.type = 'button'; b.disabled = quiz.done || quiz.lock[pos];
+      b.addEventListener('click', () => { quiz.slots[pos] = null; renderQuiz(); });
+      line.appendChild(b);
+    });
+    box.appendChild(line);
+    if (quiz.done) return;
+    const bank = el('div', 'build-bank'), used = new Set(quiz.slots.filter(x => x != null));
+    q.tiles.forEach((w, ti) => {
+      if (used.has(ti)) return;
+      const b = el('button', 'chip tile', w); b.type = 'button';
+      b.addEventListener('click', () => { const pos = quiz.slots.indexOf(null); if (pos >= 0) { quiz.slots[pos] = ti; renderQuiz(); } });
+      bank.appendChild(b);
+    });
+    box.appendChild(bank);
+    if (quiz.note) box.appendChild(el('p', 'feedback wrong', quiz.note));
+    const row = el('div', 'acts'), ok = btnOf('Check', 'btn btn-gold', () => {
+      if (quiz.slots.map(ti => q.tiles[ti]).join(' ') === q.answer) return settle(true);
+      if (quiz.tries) return settle(false);
+      slip();
+      let kept = 0;
+      quiz.slots.forEach((ti, pos) => { if (q.tiles[ti] === q.words[pos]) { quiz.lock[pos] = true; kept++; } else quiz.slots[pos] = null; });
+      quiz.note = kept ? 'Not yet. The green words are in the right place. Try once more.' : 'Not yet. Try once more.';
+      renderQuiz();
+    });
+    ok.id = 'buildOk'; ok.disabled = quiz.slots.includes(null);
+    row.append(ok, btnOf('Clear', 'btn btn-ghost', () => { quiz.slots = quiz.slots.map((ti, pos) => (quiz.lock[pos] ? ti : null)); renderQuiz(); }));
+    box.appendChild(row);
+  }
+  // Memory match: one word card and one sentence card each turn. A wrong pair that the voyager could
+  // have known (a card seen before) costs one of the board's four points.
+  function renderMemory(box, q) {
+    const grid = el('div', 'mem'), over = q.over;
+    const card = c => {
+      const open = c.done || c === q.sel || (q.miss && q.miss.includes(c));
+      const b = el('button', 'opt mem-card ' + (c.side === 'w' ? 'mem-w' : 'mem-s') + (c.done ? ' right' : open ? ' open' : '') + (q.miss && q.miss.includes(c) ? ' wrong' : ''));
+      b.type = 'button'; b.disabled = c.done || !!over;
+      if (open) b.textContent = c.side === 's' && c.done ? c.text.replace('___', q.pairs[c.k].word) : c.text;
+      else { b.appendChild(el('span', 'mem-back', c.side === 'w' ? 'WORD' : 'SENTENCE')); b.setAttribute('aria-label', (c.side === 'w' ? 'A word card' : 'A sentence card') + ', face down'); }
+      b.addEventListener('click', () => flip(q, c));
+      return b;
+    };
+    for (let i = 0; i < q.words.length; i++) grid.append(card(q.words[i]), card(q.sents[i]));
+    box.appendChild(grid);
+    const found = q.words.filter(c => c.done).length;
+    box.appendChild(el('p', 'muted', over ? 'All pairs found in ' + plural(q.turns, 'turn') + '. ' + (q.errors ? plural(q.pairs.length - Math.min(q.pairs.length, q.errors), 'point') + ' for this board.' : 'A perfect board!')
+      : q.miss ? 'They do not go together. Tap a card to go on.' : q.sel ? (q.sel.side === 'w' ? 'Now open a sentence.' : 'Now open a word.') : found + ' of ' + plural(q.pairs.length, 'pair') + ' found.'));
+    if (over) {
+      const row = el('div', 'acts'), nx = btnOf(quiz.at + 1 < quiz.qs.length ? 'Next board' : 'See my score', 'btn btn-gold', nextQ); nx.id = 'qNext';
+      row.appendChild(nx); box.appendChild(row);
+    }
+  }
+  function flip(q, c) {
+    if (q.over || c.done) return;
+    if (q.miss) { q.miss = null; q.sel = null; }
+    if (!q.sel) { q.sel = c; renderQuiz(); return; }
+    if (q.sel === c || q.sel.side === c.side) return; // one word and one sentence each turn
+    const a = q.sel; q.turns++;
+    if (a.k === c.k) {
+      a.done = c.done = true; q.sel = null;
+      say(q.pairs[a.k].full);
+      if (q.words.every(x => x.done)) {
+        q.over = true;
+        const right = Math.max(0, q.pairs.length - q.errors);
+        for (let i = 0; i < q.pairs.length; i++) quiz.marks.push(i < right);
+      }
+    } else {
+      const partner = (a.side === 'w' ? q.sents : q.words).find(x => x.k === a.k);
+      if (partner.seen || c.seen) q.errors++;
+      q.miss = [a, c];
+    }
+    a.seen = c.seen = true;
     renderQuiz();
   }
+  function storyPanel() {
+    const s = quiz.story, box = el('article', 'panel story');
+    box.append(el('p', 'eyebrow', 'Story time'), el('h2', '', s.title));
+    const row = el('div', 'acts');
+    row.append(btnOf('🔊 Listen', 'btn btn-cyan', () => say(s.text)), btnOf('🐢 Slowly', 'btn btn-ghost', () => say(s.text, true)),
+      btnOf(quiz.showText ? 'Hide the text' : 'Show the text', 'btn btn-ghost', () => { quiz.showText = !quiz.showText; renderQuiz(); }));
+    box.appendChild(row);
+    if (quiz.showText || !self.speechSynthesis) box.appendChild(el('p', 'story-text', s.text));
+    else box.appendChild(el('p', 'muted small', 'Listen first. You can listen as many times as you like.'));
+    return box;
+  }
   function endQuiz(box) {
-    const right = quiz.marks.filter(Boolean).length, n = quiz.qs.length, v = view();
+    const right = quiz.marks.filter(Boolean).length, n = quiz.total, v = view();
     const left = Math.max(0, v.homeMax - v.homeUsed), xp = Math.min(right, left);
     box.className = 'panel result';
     box.append(el('p', 'eyebrow', 'Your score'), el('b', 'big', right + ' / ' + n));
     box.append(el('p', '', right === n ? 'Perfect! You are a star!' : right >= n * 0.7 ? 'Great work!' : 'Good try! Practise again to get better.'));
     if (!quiz.sent) {
       // (send() draws the page again, so the round is marked as sent first)
-      quiz.sent = true; quiz.xp = xp;
-      if (xp > 0) { send({ kind: 'prac', n, right, units: quiz.units, ms: Date.now() - quiz.started }); return; }
+      quiz.sent = true; quiz.xp = xp; stopSay();
+      if (xp > 0) { send({ kind: 'prac', n, right, units: quiz.units, ms: Date.now() - quiz.started, game: quiz.game }); return; }
     }
     box.append(el('p', 'muted', quiz.xp > 0 ? '+' + quiz.xp + ' XP' + (cls && cls.shop && cls.shop.on !== false && cls.shop.perXp ? ' and ' + Math.round(quiz.xp * cls.shop.perXp) + ' Star Coins are' : ' is') + ' on the way to your class.' : left === 0 ? 'Today\'s 10 XP are full. Come back tomorrow!' : 'No XP this time.'));
-    const row = el('div', 'acts');
-    const again = el('button', 'btn btn-gold', 'Play again'); again.type = 'button'; again.addEventListener('click', () => { quiz = null; startQuiz(); });
-    const back = el('button', 'btn', 'Choose other questions'); back.type = 'button'; back.addEventListener('click', () => { quiz = null; render(); });
-    row.append(again, back); box.appendChild(row);
+    if (quiz.fixed) box.append(el('p', 'note-line ok', plural(quiz.fixed, 'mistake') + ' fixed and out of your notebook!'));
+    if (quiz.added) box.append(el('p', 'note-line', plural(quiz.added, 'question') + ' went into your mistake notebook. Try ' + (quiz.added === 1 ? 'it' : 'them') + ' again later.'));
+    const row = el('div', 'acts'), mis = quiz.game === 'mistakes', more = !mis || misLive().length > 0;
+    if (more) row.appendChild(btnOf(mis ? 'More of my mistakes' : 'Play again', 'btn btn-gold', () => { const g = quiz.game; quiz = null; startQuiz(g === 'mistakes' ? 'mistakes' : ''); }));
+    row.appendChild(btnOf(mis ? 'Back to Practice' : 'Choose another game', 'btn', () => { quiz = null; render(); }));
+    box.appendChild(row);
   }
 
   // ---------- the Star Bazaar ----------

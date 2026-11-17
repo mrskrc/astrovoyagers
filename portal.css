@@ -292,3 +292,38 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
   .panel.parent { background: #fff !important; box-shadow: none !important; clip-path: none !important; color: #111 !important; border: 0 !important; }
   .parent *, .parent h3 { color: #111 !important; text-shadow: none !important; } .pfact { background: #f1f3f8 !important; } .pweek i { background: #4a5ad0 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* ---------- 7.14: the word of the day, more games, the mistake notebook ---------- */
+.wod-body { display: grid; gap: 8px; }
+.wod-word { font-family: var(--font-display); font-size: clamp(1.9rem, 8vw, 2.6rem); line-height: 1.1; color: #ffe9a8; }
+.wod-sent { margin: 0; font-size: 1.15rem; line-height: 1.45; } .wod-sent mark { background: none; color: #7ff0ff; font-weight: 800; }
+.wod-out { margin: 0; min-height: 1.4em; font-weight: 700; color: var(--muted); } .wod-out.ok { color: var(--ok); } .wod-out.bad { color: var(--bad); }
+.wod-days .chip { min-height: 34px; padding: 4px 10px; font-size: 0.8rem; }
+.games { display: grid; gap: 8px; margin-bottom: 6px; }
+@media (min-width: 640px) { .games { grid-template-columns: 1fr 1fr; } }
+.game { display: flex; align-items: center; gap: 12px; text-align: left; min-height: 64px; padding: 10px 14px; cursor: pointer; }
+.game-ic { font-size: 1.7rem; line-height: 1; } .game-tx { display: grid; gap: 1px; } .game-tx b { font-size: 1.05rem; } .game-tx small { color: var(--muted); font-weight: 600; font-size: 0.82rem; }
+.game[aria-pressed="true"] { --rim: #ffe48a; --face: linear-gradient(180deg, rgba(255, 210, 63, 0.26), rgba(58, 45, 11, 0.9)); }
+.game[aria-pressed="true"] .game-tx small { color: #ffe9a8; }
+.notebook { border-left-color: #ff9ac8 !important; }
+.mis-list li { align-items: center; } .mis-list li > div { flex: 1 1 auto; min-width: 0; } .mis-list li > .mis-say { flex: 0 0 52px; min-height: 48px; padding: 4px 8px; font-size: 1.2rem; }
+.note-line { margin: 0; font-weight: 700; color: #ff9ac8; } .note-line.ok { color: var(--ok); }
+.spell { display: flex; flex-wrap: wrap; gap: 10px; }
+.spell-in { flex: 1 1 180px; min-width: 0; min-height: 56px; padding: 8px 14px; background: rgba(6, 10, 32, 0.92); color: #ffe9a8; border: 0; box-shadow: inset 0 0 0 2px rgba(255, 210, 63, 0.6); font: inherit; font-family: var(--font-display); font-size: 1.5rem; font-weight: 700; letter-spacing: 0.08em; }
+.spell-in:focus { outline: none; box-shadow: inset 0 0 0 2px #ffe48a, 0 0 14px rgba(255, 210, 63, 0.4); }
+.letters { margin: 0; font-family: var(--font-hud); font-weight: 800; font-size: 1.4rem; letter-spacing: 0.2em; color: #7ff0ff; text-transform: lowercase; }
+.build-line { display: flex; flex-wrap: wrap; gap: 8px; min-height: 60px; padding: 10px; background: rgba(6, 10, 32, 0.6); box-shadow: inset 0 0 0 1.5px rgba(127, 240, 255, 0.3); }
+.build-line.right { box-shadow: inset 0 0 0 2px var(--ok); } .build-line.wrong { box-shadow: inset 0 0 0 2px var(--bad); }
+.build-bank { display: flex; flex-wrap: wrap; gap: 8px; min-height: 48px; }
+.tile { font-size: 1.05rem; min-height: 44px; } .tile.locked { --rim: #6fe3b4; --face: rgba(30, 90, 70, 0.9); --fg: #dfffee; opacity: 1; }
+.slot { width: 54px; min-height: 42px; border-bottom: 3px solid rgba(127, 240, 255, 0.35); }
+.mem { display: grid; grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.7fr); gap: 8px; }
+.mem-card { min-height: 78px; padding: 8px 10px; font-size: 0.98rem; line-height: 1.3; cursor: pointer; display: grid; place-items: center; text-align: center; }
+.mem-card.mem-w { font-size: 1.1rem; }
+.mem-card.open { --rim: #bff8ff; --face: #12305a; }
+.mem-card.wrong { --rim: #ff8a9a; --face: rgba(90, 30, 46, 0.9); --fg: #ffd9df; }
+.mem-card:disabled { opacity: 1; }
+.mem-back { font-family: var(--font-hud); font-weight: 800; font-size: 0.72rem; letter-spacing: 0.16em; color: rgba(127, 240, 255, 0.55); }
+.mem-s .mem-back { color: rgba(255, 210, 63, 0.6); } .mem-s:not(.open):not(.right) { --rim: rgba(255, 210, 63, 0.4); }
+.story { border-left-color: #ffd23f !important; } .story h2 { margin: 0; }
+.story-text { margin: 0; font-size: 1.08rem; line-height: 1.6; }
