@@ -327,3 +327,14 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
 .mem-s .mem-back { color: rgba(255, 210, 63, 0.6); } .mem-s:not(.open):not(.right) { --rim: rgba(255, 210, 63, 0.4); }
 .story { border-left-color: #ffd23f !important; } .story h2 { margin: 0; }
 .story-text { margin: 0; font-size: 1.08rem; line-height: 1.6; }
+
+/* 7.15: the part of a story a question is about */
+.quote { margin: 0; padding: 10px 14px; background: rgba(6, 10, 32, 0.6); border-left: 3px solid #ffd23f; font-size: 1.08rem; line-height: 1.5; }
+.quote mark { background: rgba(127, 240, 255, 0.18); color: #7ff0ff; font-weight: 800; padding: 0 3px; }
+
+/* 7.15: the demo page for teachers */
+.demo-bar { display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; padding: 10px 14px; margin-bottom: 10px; background: linear-gradient(90deg, rgba(255, 210, 63, 0.22), rgba(255, 210, 63, 0.06)); border-left: 3px solid #ffd23f; color: #ffe9a8; font-weight: 600; font-size: 0.92rem; }
+.demo-bar b { font-family: var(--font-hud); letter-spacing: 0.12em; text-transform: uppercase; font-size: 0.8rem; color: #ffd23f; }
+@media print { .demo-bar { display: none !important; } }
+.demo-bar .btn { min-height: 36px; padding: 4px 12px; font-size: 0.72rem; margin-left: auto; }
+.out-btn[hidden] { display: none !important; }

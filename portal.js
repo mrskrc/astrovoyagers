@@ -137,7 +137,7 @@
   }
   let refreshing = false;
   async function refresh(quiet) {
-    if (!me || refreshing) return;
+    if (!me || refreshing || demo) return;
     refreshing = true;
     try { const r = await api({ op: 'portalGet', k: me.k, c: rec ? rec.cid : '' }); if (r.none) { signOut('Your code has changed. Ask your teacher for your new card.'); return; } await absorb(r); render(); }
     catch (e) { if (!quiet) toast(e.message); }
@@ -171,13 +171,14 @@
   // ---------- sending a request ----------
   function device() { let d = LS.get('dv'); if (!/^[a-z0-9]{8}$/.test(d || '')) { d = ''; while (d.length < 8) d += Math.random().toString(36).slice(2); d = d.slice(0, 8); LS.set('dv', d); } return d; }
   function hello() { // once for each phone and code, so the teacher can see a code that travels
-    if (!me) return;
+    if (!me || demo) return;
     const said = LS.get('hi') || [], mark = String(me.k).slice(0, 10);
     if (said.includes(mark)) return;
     LS.set('hi', said.concat(mark).slice(-10));
     send({ kind: 'hi' });
   }
   async function send(e) {
+    if (demo) { e.id = P.rid(12); e.t = Date.now(); demoApply(e); render(); return true; }
     e.id = P.rid(12); e.t = Date.now(); e.dv = device();
     sent.push(e); render();
     try {
@@ -448,7 +449,7 @@
     ['spell', '🎧', 'Listen and spell', 'Hear a word and type it'],
     ['build', '🧩', 'Build the sentence', 'Put the words in the right order'],
     ['memory', '🃏', 'Memory match', 'Find the word for each sentence'],
-    ['story', '📖', 'Story time', 'Listen to a story, answer five questions']
+    ['story', '📖', 'Story time', 'Listen to a story, answer six questions']
   ];
 
   // ---------- 7.14: the mistake notebook (it lives on this device) ----------
@@ -583,7 +584,14 @@
       let done = (LS.get(key) || []).filter(id => all.some(s => s.id === id));
       if (done.length >= all.length) done = done.slice(-1); // every story heard: start again, but not with the last one
       story = shuffle(all.filter(s => !done.includes(s.id)))[0];
-      if (story) { LS.set(key, done.concat(story.id)); qs = story.q.map(q => ({ t: 'st', kind: 'Story time', ask: 'Listen to the story and answer', prompt: q[0], answer: q[1], options: shuffle(q.slice(1)), full: '' })); }
+      if (story) {
+        LS.set(key, done.concat(story.id));
+        qs = story.q.map(q => ({ t: 'st', kind: 'Story time', ask: 'Listen to the story and answer', prompt: q[0], answer: q[1], options: shuffle(q.slice(1)), full: '' }));
+        // 7.15: every story also asks what a word points to, and the meaning of a harder word from its sentence
+        const r = story.ref, c = story.clue;
+        if (r) qs.push({ t: 'st', kind: 'Story time', ask: 'Reference: read this part of the story', quote: r[0], mark: r[1], prompt: 'What does "' + r[1] + '" refer to?', answer: r[2], options: shuffle(r.slice(2)), full: '' });
+        if (c) { const w = c[1] === 'I' ? c[1] : c[1].toLowerCase(); qs.push({ t: 'st', kind: 'Story time', ask: 'Context clue: find the meaning from the sentence', quote: c[0], mark: c[1], prompt: 'What does "' + w + '" mean here?', answer: c[2], options: shuffle(c.slice(2)), full: '' }); }
+      }
     } else {
       let pool = B.poolList(pick.units, pick.kind, true);
       if (pool.length < 4) pool = B.poolList(pick.units, 'mix', true);
@@ -661,6 +669,12 @@
     }
   }
   function renderChoice(box, q) {
+    if (q.quote) { // the part of the story the question is about, with its word marked
+      const bq = el('blockquote', 'quote'), m = new RegExp('\\b' + q.mark.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').exec(q.quote);
+      if (m) bq.append(document.createTextNode(q.quote.slice(0, m.index)), el('mark', '', m[0]), document.createTextNode(q.quote.slice(m.index + m[0].length)));
+      else bq.textContent = q.quote;
+      box.appendChild(bq);
+    }
     const text = el('p', 'q-text');
     if (q.t === 'e') q.prompt.split(/(\[[^\]]+\])/).forEach(part => { const m = /^\[(.+)\]$/.exec(part); text.appendChild(m ? el('mark', '', m[1]) : document.createTextNode(part)); });
     else if (q.t === 'x' || q.t === 'st') text.textContent = q.prompt;
@@ -795,7 +809,7 @@
   }
   function storyPanel() {
     const s = quiz.story, box = el('article', 'panel story');
-    box.append(el('p', 'eyebrow', 'Story time'), el('h2', '', s.title));
+    box.append(el('p', 'eyebrow', s.world ? 'Story time · Did you know?' : 'Story time'), el('h2', '', s.title));
     const row = el('div', 'acts');
     row.append(btnOf('🔊 Listen', 'btn btn-cyan', () => say(s.text)), btnOf('🐢 Slowly', 'btn btn-ghost', () => say(s.text, true)),
       btnOf(quiz.showText ? 'Hide the text' : 'Show the text', 'btn btn-ghost', () => { quiz.showText = !quiz.showText; renderQuiz(); }));
@@ -979,7 +993,7 @@
   let giftPick = false;
   async function buy(it) {
     const ok = await send({ kind: 'buy', item: it.id, d: D.dayKey ? D.dayKey() : '' });
-    talk = ok ? { lines: [], wrong: new Set(), say: any(D.SHOPKEEPER.thanks) + ' Your class board will finish the order.', mood: 'wow', done: true } : null;
+    talk = ok ? { lines: [], wrong: new Set(), say: any(D.SHOPKEEPER.thanks) + (demo ? ' In the demo it is yours at once.' : ' Your class board will finish the order.'), mood: 'wow', done: true } : null;
     renderSheet();
   }
 
@@ -1045,10 +1059,74 @@
   setInterval(() => { if (me && !document.hidden && !$('sheet').open && !quiz) refresh(true); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden && me) refresh(true); });
 
+  // ---------- 7.15: the demo page for teachers ----------
+  // The address with #demo opens a made-up voyager on this device. Nothing is sent to a class and
+  // nothing is kept: what the "board" would do with a request is done here, at once.
+  let demo = false;
+  function demoStart() {
+    demo = true; url = '';
+    const day = n => { const x = new Date(); x.setDate(x.getDate() + n); return x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0') + '-' + String(x.getDate()).padStart(2, '0'); };
+    const buyable = D.items.filter(i => i.rarity !== 'starter' && !i.signature && !i.req);
+    const of = slot => buyable.filter(i => i.slot === slot);
+    const ship = k => { const eq = { shipname: (k * 3) % D.SHIP_ADJ.length + '|' + (k * 5) % D.SHIP_NOUN.length }; ['hull', 'wing', 'paint', 'trail'].forEach((sl, j) => { const L = of(sl); if (L.length) eq[sl] = L[(k * 7 + j) % L.length].id; }); return eq; };
+    const mine = [of('hat')[0], of('hull')[0], of('poster')[0]].filter(Boolean).map(i => i.id);
+    me = { k: 'demo', raw: null };
+    rec = {
+      v: 1, c: 'Demo', n: 'Teacher', cr: 12, hat: null, xp: 245, lv: 3, into: 45, need: 100, st: 2, wk: 35, badges: [],
+      dust: 400, earned: 520, own: mine, wish: [], eq: {}, books: 3, hw: 2, hwm: { d0: 'd' }, sigs: {},
+      home: { d: todayKey(), x: 0, max: 10 }, speak: { d: todayKey(), x: 0, max: 10 }, done: [],
+      gifts: mine[0] ? [[mine[0], 'Ada', Date.now() - 86400000]] : [], gleft: 1,
+      team: { n: 'Comets', col: '#7ff0ff', fill: 110, goal: 150, opened: 1, stars: 2 },
+      par: { weeks: [40, 55, 30, 35], hd: 3, hp: 18, hs: 9, picks: 4 }, sid: 'demo', ck: null, cid: 'demo', at: Date.now()
+    };
+    cls = {
+      v: 1, c: 'Demo', units: ['meb5/t1', 'h1/u1', 'h1/u2', 'h2/u1', 'df1/u1'], study: 'h1/u1',
+      hw: [{ id: 'd1', title: 'Workbook page 24', note: 'Exercises 1, 2 and 3', due: day(2), set: day(-1), checked: false }, { id: 'd0', title: 'Learn the words of Unit 1', note: '', due: day(-3), set: day(-6), checked: true }],
+      fleet: [{ id: 'demo', n: 'Teacher', eq: {}, own: mine.length }].concat(['Ada', 'Leo', 'Mia', 'Sam', 'Zoe'].map((n, k) => ({ id: 'f' + k, n, eq: ship(k + 1), own: 4 + k * 3 }))),
+      shop: { on: true, perXp: 1, perBook: 20, talk: true }, max: 10
+    };
+    const bar = el('div', 'demo-bar');
+    bar.append(el('b', '', 'Teacher demo'), el('span', '', 'A made-up voyager on this device. Nothing is saved and nothing goes to a class.'));
+    const leave = el('button', 'btn btn-ghost', 'Leave the demo'); leave.type = 'button'; leave.id = 'demoLeave';
+    leave.addEventListener('click', () => { history.replaceState(null, '', location.pathname); location.reload(); });
+    bar.appendChild(leave);
+    $('app').prepend(bar);
+    $('signOut').hidden = true;
+    show();
+  }
+  function demoApply(e) {
+    const it = e.item ? D.byId.get(e.item) : null, per = (cls.shop && cls.shop.perXp) || 0;
+    const gain = x => {
+      if (x <= 0) return;
+      rec.xp += x; rec.wk += x; rec.par.weeks[3] += x; rec.into += x;
+      while (rec.into >= rec.need) { rec.into -= rec.need; rec.lv++; }
+      const c = Math.round(x * per); rec.dust += c; rec.earned += c;
+    };
+    let ok = 1, why = '', x = 0;
+    if (e.kind === 'prac') { x = Math.max(0, Math.min(e.right || 0, rec.home.max - rec.home.x)); rec.home.x += x; gain(x); if (x < (e.right || 0)) why = 'cap'; rec.par.hp += e.right || 0; }
+    else if (e.kind === 'speak') { x = Math.max(0, Math.min(e.right || 0, rec.speak.max - rec.speak.x)); rec.speak.x += x; gain(x); rec.par.hs += e.right || 0; }
+    else if (e.kind === 'buy' && it) {
+      const b = block(rec, it);
+      if (b) { ok = 0; why = b; }
+      else { rec.dust -= priceOf(rec, it); rec.own.push(it.id); rec.wish = rec.wish.filter(w => w !== it.id); if (equipable(it)) rec.eq[it.slot] = it.id; if (it.signature) rec.sigs[it.id] = ''; }
+    } else if (e.kind === 'equip') { if (e.item) rec.eq[e.slot] = e.item; else delete rec.eq[e.slot]; }
+    else if (e.kind === 'wish' && it) { const has = rec.wish.includes(it.id); if (e.on && !has) rec.wish.push(it.id); if (!e.on && has) rec.wish = rec.wish.filter(w => w !== it.id); }
+    else if (e.kind === 'chest' && rec.team) {
+      const n = Math.min(e.n || 0, rec.dust); rec.dust -= n; rec.team.fill += n;
+      if (rec.team.fill >= rec.team.goal) { rec.team.fill -= rec.team.goal; rec.team.opened++; gain(10); toast('The squad chest is full! +10 XP for everyone in the squad.', 6000); }
+    } else if (e.kind === 'gift' && it) { rec.dust -= priceOf(rec, it); rec.gleft = 0; }
+    rec.done = (rec.done || []).concat([[e.id, ok, why, x, it && (e.kind === 'buy') ? it.id : '']]).slice(-40);
+    rec.at = Date.now();
+  }
+
   // ---------- start ----------
   function start() {
     A.zib($('zib'), 'happy', 0);
     setInterval(() => { if (!$('signin').hidden) A.zib($('zib'), 'happy', ++tick); }, 300);
+    $('sheet').addEventListener('close', () => { openId = null; talk = null; giftPick = false; });
+    if (/(^#|&)demo$/.test(location.hash)) {
+      return demoStart();
+    }
     url = P.scriptUrl(location.hash) || (LS.get('script') || '');
     if (P.scriptUrl(location.hash)) LS.set('script', url);
     if (!url) { $('codeForm').hidden = true; $('noScript').hidden = false; $('hello').textContent = 'Hello, voyager!'; return; }
@@ -1058,7 +1136,6 @@
       e.target.value = raw.length > 3 ? raw.slice(0, 3) + '-' + raw.slice(3) : raw;
     });
     $('signOut').addEventListener('click', () => signOut());
-    $('sheet').addEventListener('close', () => { openId = null; talk = null; giftPick = false; });
     const saved = LS.get('me');
     if (saved && saved.url === url && saved.k && saved.raw) {
       me = { k: saved.k, raw: saved.raw };
