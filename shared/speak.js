@@ -202,12 +202,17 @@
     });
   }
   function stopListening() { try { if (rec) rec.abort(); } catch (e) { /* ignore */ } }
+  // 7.16 (the voyager's page): a recording when there is one (voice.js), the device's voice when there is not
   function speakOut(text, slow) {
+    if (text && self.AVVoice && self.AVVoice.say(text, slow, () => deviceVoice(text, slow))) return;
+    deviceVoice(text, slow);
+  }
+  function deviceVoice(text, slow) {
     if (!text || !self.speechSynthesis) return;
     try {
       speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text), vs = speechSynthesis.getVoices();
-      const v = vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang));
+      const v = self.AVVoice && self.AVVoice.device ? self.AVVoice.device() : vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang));
       if (v) u.voice = v;
       u.lang = v ? v.lang : 'en-GB'; u.rate = slow ? 0.6 : 0.88;
       speechSynthesis.speak(u);

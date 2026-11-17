@@ -295,8 +295,8 @@
     else sent.append(document.createTextNode(w.sentence.slice(0, at)), el('mark', '', w.sentence.slice(at, at + w.word.length)), document.createTextNode(w.sentence.slice(at + w.word.length)));
     body.appendChild(sent);
     const row = el('div', 'acts'), out = el('p', 'wod-out'); out.setAttribute('role', 'status');
-    row.appendChild(btnOf('🔊 Listen', 'btn btn-cyan', () => say(w.word + '. ' + w.sentence)));
-    row.appendChild(btnOf('🐢 Slowly', 'btn btn-ghost', () => say(w.word + '. ' + w.sentence, true)));
+    row.appendChild(btnOf('🔊 Listen', 'btn btn-cyan', () => say([w.word, w.sentence])));
+    row.appendChild(btnOf('🐢 Slowly', 'btn btn-ghost', () => say([w.word, w.sentence], true)));
     if (K && K.canListen()) {
       const mic = btnOf('🎤 Say it', 'btn btn-gold', async () => {
         if (mic.disabled) return;
@@ -602,10 +602,13 @@
     stopSay();
     render(); window.scrollTo(0, 0);
   }
-  const enVoice = () => { const vs = speechSynthesis.getVoices(); return vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)); };
-  function stopSay() { try { if (self.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* no voice */ } }
-  // Long texts are spoken sentence by sentence (some phones stop in the middle of a long one).
-  function say(text, slow) {
+  const enVoice = () => { if (self.AVVoice) return self.AVVoice.device(); const vs = speechSynthesis.getVoices(); return vs.find(x => /^en(-|_)GB/i.test(x.lang)) || vs.find(x => /^en/i.test(x.lang)); };
+  function stopSay() {
+    if (self.AVVoice) self.AVVoice.stop();
+    try { if (self.speechSynthesis) speechSynthesis.cancel(); } catch (e) { /* no voice */ }
+  }
+  // The device's own voice. Long texts are spoken sentence by sentence (some phones stop in the middle of a long one).
+  function tts(text, slow) {
     if (!text || !self.speechSynthesis) return;
     try {
       speechSynthesis.cancel();
@@ -617,6 +620,17 @@
         speechSynthesis.speak(u);
       });
     } catch (e) { /* no voice */ }
+  }
+  // 7.16: a recording when there is one (voice.js), the device's voice when there is not.
+  // what: a text, a list of texts (said one after the other) or a story.
+  function say(what, slow) {
+    if (!what) return;
+    const story = typeof what === 'object' && !Array.isArray(what);
+    const text = story ? what.text : Array.isArray(what) ? what.join('. ') : what;
+    const V = self.AVVoice;
+    if (V && V.say(story ? { story: what.id } : what, slow, () => tts(text, slow))) return;
+    if (V) V.stop();
+    tts(text, slow);
   }
   const btnOf = (label, cl, fn) => { const b = el('button', cl, label); b.type = 'button'; b.addEventListener('click', fn); return b; };
   // The current question is over: right or wrong, into or out of the notebook.
@@ -811,7 +825,7 @@
     const s = quiz.story, box = el('article', 'panel story');
     box.append(el('p', 'eyebrow', s.world ? 'Story time · Did you know?' : 'Story time'), el('h2', '', s.title));
     const row = el('div', 'acts');
-    row.append(btnOf('🔊 Listen', 'btn btn-cyan', () => say(s.text)), btnOf('🐢 Slowly', 'btn btn-ghost', () => say(s.text, true)),
+    row.append(btnOf('🔊 Listen', 'btn btn-cyan', () => say(s)), btnOf('🐢 Slowly', 'btn btn-ghost', () => say(s, true)),
       btnOf(quiz.showText ? 'Hide the text' : 'Show the text', 'btn btn-ghost', () => { quiz.showText = !quiz.showText; renderQuiz(); }));
     box.appendChild(row);
     if (quiz.showText || !self.speechSynthesis) box.appendChild(el('p', 'story-text', s.text));
