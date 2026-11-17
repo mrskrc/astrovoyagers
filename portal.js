@@ -625,7 +625,7 @@
       sh.appendChild(tk);
     }
   }
-  let giftPick = false, naming = null;
+  let giftPick = false;
   async function buy(it) {
     const ok = await send({ kind: 'buy', item: it.id, d: D.dayKey ? D.dayKey() : '' });
     talk = ok ? { lines: [], wrong: new Set(), say: any(D.SHOPKEEPER.thanks) + ' Your class board will finish the order.', mood: 'wow', done: true } : null;
@@ -637,25 +637,7 @@
     const ship = el('article', 'panel');
     ship.appendChild(el('h2', '', 'My ship'));
     const hg = el('div', 'hangar'), sc = el('canvas', 'px'); sc.id = 'myShip'; A.ship(sc, v.eq, { t: tick }); hg.appendChild(sc); ship.appendChild(hg);
-    if (D.shipName) { const nm = D.shipName(v.eq), n = v.own.filter(id => { const it = D.byId.get(id); return it && it.rarity !== 'starter'; }).length; ship.appendChild(el('p', 'shipname', nm || 'Your ship has no name yet.')); ship.appendChild(el('p', 'muted small', 'Bazaar rank: ' + D.rankOf(n).name)); }
-    if (D.SHIP_ADJ && rec.sid) { // a board from 7.13 on knows how to name a ship from home
-      if (!naming) { const nb = el('button', 'btn btn-ghost', D.shipName(v.eq) ? 'Change the name' : 'Name my ship'); nb.type = 'button'; nb.addEventListener('click', () => { const m = /^(\d+)\|(\d+)$/.exec(v.eq.shipname || ''); naming = { a: m ? +m[1] : 0, n: m ? +m[2] : 0 }; render(); }); ship.appendChild(nb); }
-      else {
-        const nbx = el('div', 'namer');
-        nbx.appendChild(el('p', 'shipname', 'The ' + D.SHIP_ADJ[naming.a] + ' ' + D.SHIP_NOUN[naming.n]));
-        [['Choose a describing word', D.SHIP_ADJ, 'a'], ['Choose a thing', D.SHIP_NOUN, 'n']].forEach(([label, words, key]) => {
-          nbx.appendChild(el('p', 'eyebrow', label));
-          const row = el('div', 'gift-row');
-          words.forEach((w, k) => { const b = el('button', 'pick', w); b.type = 'button'; b.setAttribute('aria-pressed', String(naming[key] === k)); b.addEventListener('click', () => { naming[key] = k; render(); }); row.appendChild(b); });
-          nbx.appendChild(row);
-        });
-        const acts = el('div', 'acts'), ok = el('button', 'btn btn-gold', 'Save the name'), no = el('button', 'btn btn-ghost', 'Cancel');
-        ok.type = no.type = 'button';
-        ok.addEventListener('click', () => { const e = { kind: 'name', a: naming.a, n: naming.n }; naming = null; say('The ' + D.SHIP_ADJ[e.a] + ' ' + D.SHIP_NOUN[e.n]); send(e); });
-        no.addEventListener('click', () => { naming = null; render(); });
-        acts.append(ok, no); nbx.appendChild(acts); ship.appendChild(nbx);
-      }
-    }
+    if (D.shipName) { const nm = D.shipName(v.eq), n = v.own.filter(id => { const it = D.byId.get(id); return it && it.rarity !== 'starter'; }).length; ship.appendChild(el('p', 'shipname', nm || 'Your ship has no name yet. Name it in the Star Bazaar at school!')); ship.appendChild(el('p', 'muted small', 'Bazaar rank: ' + D.rankOf(n).name)); }
     const cab = el('article', 'panel cabin');
     cab.appendChild(el('h2', '', 'My cabin'));
     const cc = el('canvas', 'px'); cc.id = 'myCabin'; A.cabin(cc, v.eq, { cid: v.cr, stage: v.st || 1, wear: pickEq(v.eq, WEAR), hat: v.hat, t: tick }); cab.appendChild(cc);
