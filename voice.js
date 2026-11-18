@@ -5,12 +5,15 @@
   'use strict';
   const M = self.AVAudio || {};
   const have = new Set(String(M.s || '').split(' ').filter(Boolean)), stories = new Set(M.story || []);
+  // the recordings keep their names when they are made again, so their version is in the address
+  // (a browser then fetches the new voice instead of playing the old one from its cache)
+  const V = M.v ? '?v=' + encodeURIComponent(M.v) : '';
   let player = null, queue = [], turn = 0;
   // a text, or { story: id } → the address of its recording ('' when there is none)
   function urlOf(x) {
-    if (x && typeof x === 'object') return stories.has(x.story) ? 'audio/story/' + x.story + '.mp3' : '';
+    if (x && typeof x === 'object') return stories.has(x.story) ? 'audio/story/' + x.story + '.mp3' + V : '';
     const k = self.AVKey ? self.AVKey(x) : '';
-    return k && have.has(k) ? 'audio/s/' + k + '.mp3' : '';
+    return k && have.has(k) ? 'audio/s/' + k + '.mp3' + V : '';
   }
   function stop() { turn++; queue = []; if (player) { try { player.pause(); } catch (e) { /* nothing is playing */ } } }
   // Plays one recording or several, one after the other. Returns false (and plays nothing) when a
