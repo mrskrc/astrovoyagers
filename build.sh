@@ -6,6 +6,7 @@ cd "$(dirname "$0")"
 mkdir -p shared/books fonts icons
 for f in creatures.js lore.js shopdata.js shopmore.js shopart.js portalkit.js books.js speak.js speak.css; do cp "$EXT/$f" shared/; done
 cp "$EXT"/books/*.js shared/books/
+cp "$EXT/voicekey.js" "$EXT/voice.js" .        # the recorded voice: source in the extension (the boards use it too)
 cp "$EXT"/fonts/*.woff2 fonts/
 cp "$EXT"/icons/icon16.png "$EXT"/icons/icon32.png "$EXT"/icons/icon48.png "$EXT"/icons/icon128.png icons/
 echo "shared files copied"

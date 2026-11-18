@@ -1,4 +1,4 @@
-/* ASTROVOYAGERS · the name of a recording
+/* ASTROVOYAGERS · the name of a recording (source in sinif-paneli; the site's build.sh copies it)
    A text → a short key (10 hex letters). The recordings in audio/s/ are named with it, so the page
    and the script that makes the recordings must use the same function. */
 (function (root) {
