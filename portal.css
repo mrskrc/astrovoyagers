@@ -90,7 +90,10 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; line
   .tab { grid-auto-flow: column; gap: 8px; align-items: center; justify-content: center; font-size: 0.95rem; min-height: 48px; }
   .wrap { padding-bottom: 32px; }
 }
-.page { display: grid; gap: 14px; margin-top: 14px; }
+/* one column that never grows past the screen: a wide child (e.g. the row of shops) scrolls inside itself
+   instead of making every panel wider than the phone */
+.page { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; margin-top: 14px; }
+.page > * { min-width: 0; }
 .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
 .stat { display: grid; gap: 4px; }
 .stat b { font-family: var(--font-display); font-size: 1.8rem; }
@@ -109,8 +112,8 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; line
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip { min-height: 42px; padding: 6px 14px; border-radius: 999px; border: 1px solid rgba(127, 240, 255, 0.4); background: rgba(127, 240, 255, 0.07); color: #bff8ff; font-weight: 700; cursor: pointer; }
 .chip[aria-pressed="true"] { background: rgba(127, 240, 255, 0.28); border-color: var(--cyan); color: #fff; }
-.q-card { display: grid; gap: 14px; }
-.q-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
+.q-card { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; }
+.q-top { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; color: var(--muted); font-weight: 700; font-size: 0.9rem; }
 .q-text { margin: 0; font-family: var(--font-display); font-size: clamp(1.25rem, 4.6vw, 1.7rem); line-height: 1.35; }
 .q-text .gap { display: inline-block; min-width: 3.5em; border-bottom: 3px solid var(--cyan); }
 .q-text mark { background: none; color: #bff8ff; border-bottom: 2px dashed rgba(127, 240, 255, 0.6); }
@@ -122,7 +125,7 @@ h1, h2, h3 { font-family: var(--font-display); font-weight: 700; margin: 0; line
 .feedback { padding: 10px 14px; border-radius: 12px; background: rgba(6, 10, 32, 0.6); font-weight: 600; }
 .feedback.right { color: var(--ok); }
 .feedback.wrong { color: var(--bad); }
-.dots { display: flex; gap: 6px; }
+.dots { display: flex; flex-wrap: wrap; gap: 6px; }
 .dots i { width: 10px; height: 10px; border-radius: 50%; background: rgba(127, 140, 220, 0.3); }
 .dots i.r { background: var(--ok); } .dots i.w { background: var(--bad); } .dots i.now { background: var(--cyan); }
 .result { text-align: center; display: grid; gap: 10px; justify-items: center; }
@@ -338,3 +341,13 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
 @media print { .demo-bar { display: none !important; } }
 .demo-bar .btn { min-height: 36px; padding: 4px 12px; font-size: 0.72rem; margin-left: auto; }
 .out-btn[hidden] { display: none !important; }
+/* small phones: the coins go under the name (they covered it), and the six tab names never touch */
+@media (max-width: 400px) {
+  .me { grid-template-columns: auto minmax(0, 1fr); gap: 10px 12px; }
+  .me-art { width: 84px; height: 82px; }
+  .me-art canvas { width: 76px; height: 73px; }
+  .wallet { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 12px; text-align: left; }
+  .wallet .out-btn { margin-top: 0; }
+  .tab { letter-spacing: 0; font-size: clamp(7.5px, 2.4vw, 9.6px); }
+  .tab span { max-width: 100%; white-space: nowrap; }
+}
