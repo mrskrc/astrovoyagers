@@ -365,43 +365,130 @@
     else news.appendChild(ul);
     news.appendChild(el('p', 'muted small', 'Things you do here arrive when a board in your classroom is on. Your class updated this page ' + ago(rec.at) + '.'));
     page.appendChild(news);
-    const pb = el('button', 'btn btn-ghost parent-link', 'For parents: a summary'); pb.type = 'button';
+    const pb = el('button', 'btn btn-ghost parent-link', 'For parents · Veliler için'); pb.type = 'button';
     pb.addEventListener('click', () => { tab = 'parent'; render(); window.scrollTo(0, 0); });
     page.appendChild(pb);
   }
 
   // ---------- 7.13: a summary for the parents ----------
+  // 7.15: Turkish first (an exception to "English only": this page is for the parents, not the children).
+  // EN/TR switch, kept on this device. A short plain summary in sentences sits above the numbers.
+  const PL = {
+    en: {
+      eyebrow: 'For parents', locale: 'en-GB', lang: 'English',
+      intro: n => 'ASTROVOYAGERS is the game of our English lessons. Children earn XP (points) when they speak, answer, read and do their homework. Here is how ' + n + ' is doing.',
+      sumH: 'In short', level: 'Level', lvSub: x => x + ' XP in all', week: 'This week',
+      more: 'More than last week', same: 'The same as last week', less: 'Less than last week',
+      books: 'Books read', booksSub: 'on BookR Next', badges: 'Badges', badgesSub: 'for good work',
+      gloss: 'XP: points for work in class and at home. The level goes up as the XP grows.',
+      chartH: 'XP in the last four weeks', wkLbl: i => i === 3 ? 'This week' : i === 2 ? 'Last week' : (3 - i) + ' weeks ago',
+      hwH: 'Homework',
+      hwLine: (d, n, miss) => d + ' of the last ' + plural(n, 'checked task') + ' done.' + (miss.length ? ' Not done: ' + miss.join('; ') + '.' : ' Nothing is missing.'),
+      hwNone: 'No checked homework yet.', todo: l => 'To do now: ' + l.join('; ') + '.', due: d => 'due ' + d,
+      homeH: 'Work at home in the last four weeks',
+      homeLine: (d, p, sp) => 'Practised on ' + plural(d, 'day') + ': ' + plural(p, 'right answer') + ' and ' + plural(sp, 'sentence') + ' spoken aloud.',
+      homeNone: 'No practice at home yet. Ten minutes a day on this page is enough.',
+      helpH: 'How you can help',
+      tips: ['Ask your child to open this page for ten minutes a day: Practice and Captain.', 'Listen to one BookR book together each week.', 'Ask "What did you learn in English today?" Any answer in English is a success.'],
+      print: 'Print', back: 'Back', foot: t => 'Mr. Şekerci · This page shows only your own child. Updated ' + t + '.',
+      ago: t => ago(t),
+      s: {
+        none: 'No points yet this term.', up: 'This week your child earned more points than last week. Well done!',
+        same: 'This week your child earned as many points as last week.', down: 'This week your child earned fewer points than last week.',
+        zeroWk: 'No points yet this week.',
+        hwAll: 'Your child did all the checked homework.', hwMost: (d, n) => 'Your child did most of the homework (' + d + ' of ' + n + ').',
+        hwFew: (d, n) => 'Some homework is missing (' + d + ' of ' + n + ' done).', open: n => plural(n, 'homework task') + ' to do now.',
+        homeGood: d => 'Your child practises at home regularly (' + plural(d, 'day') + ' in four weeks).',
+        homeSome: d => 'Your child practised at home on ' + plural(d, 'day') + ' in four weeks. A few more days a week would help a lot.',
+        homeNone: 'Your child has not practised on this page at home yet. Ten minutes a day is enough.',
+        books: n => 'Your child has read ' + plural(n, 'book') + ' on BookR Next.'
+      }
+    },
+    tr: {
+      eyebrow: 'Veliler için', locale: 'tr-TR', lang: 'Türkçe',
+      intro: n => 'ASTROVOYAGERS, İngilizce derslerimizin oyunudur. Öğrenciler derste konuştukça, soru cevapladıkça, kitap okudukça ve ödev yaptıkça XP (puan) kazanır. Öğrencimiz ' + n + ' için durum aşağıdadır.',
+      sumH: 'Kısaca', level: 'Seviye', lvSub: x => 'Toplam ' + x + ' XP', week: 'Bu hafta',
+      more: 'Geçen haftadan fazla', same: 'Geçen haftayla aynı', less: 'Geçen haftadan az',
+      books: 'Okunan kitap', booksSub: 'BookR Next’te', badges: 'Rozet', badgesSub: 'iyi çalışma için',
+      gloss: 'XP: derste ve evde yapılan çalışmaların puanı. Puan arttıkça seviye yükselir.',
+      chartH: 'Son dört haftanın puanları', wkLbl: i => i === 3 ? 'Bu hafta' : i === 2 ? 'Geçen hafta' : (3 - i) + ' hafta önce',
+      hwH: 'Ödevler',
+      hwLine: (d, n, miss) => 'Kontrol edilen son ' + n + ' ödevden ' + d + ' tanesi yapıldı.' + (miss.length ? ' Yapılmayanlar: ' + miss.join('; ') + '.' : ' Eksik ödev yok.'),
+      hwNone: 'Henüz kontrol edilmiş ödev yok.', todo: l => 'Şu an yapılacaklar: ' + l.join('; ') + '.', due: d => 'son gün ' + d,
+      homeH: 'Son dört haftada evde çalışma',
+      homeLine: (d, p, sp) => d + ' gün çalıştı: ' + p + ' doğru cevap verdi, ' + sp + ' cümleyi sesli söyledi.',
+      homeNone: 'Henüz evde çalışma yok. Bu sayfada günde on dakika yeterlidir.',
+      helpH: 'Nasıl destek olabilirsiniz?',
+      tips: ['Çocuğunuzdan bu sayfayı her gün on dakika açmasını isteyin (Practice ve Captain bölümleri).', 'Her hafta bir BookR kitabını birlikte dinleyin.', '“Bugün İngilizcede ne öğrendin?” diye sorun. İngilizce verilen her cevap bir başarıdır.'],
+      print: 'Yazdır', back: 'Geri', foot: t => 'Mr. Şekerci · Bu sayfa yalnızca sizin çocuğunuzu gösterir. Son güncelleme: ' + t + '.',
+      ago: t => { const m = Math.round((Date.now() - t) / 60000); if (m < 2) return 'az önce'; if (m < 60) return m + ' dakika önce'; const h = Math.round(m / 60); if (h < 24) return h + ' saat önce'; return Math.round(h / 24) + ' gün önce'; },
+      s: {
+        none: 'Bu dönem henüz puanı yok.', up: 'Çocuğunuz bu hafta geçen haftadan daha fazla puan kazandı. Tebrikler!',
+        same: 'Çocuğunuz bu hafta geçen haftayla aynı puanı kazandı.', down: 'Çocuğunuz bu hafta geçen haftadan daha az puan kazandı.',
+        zeroWk: 'Bu hafta henüz puan kazanmadı.',
+        hwAll: 'Kontrol edilen ödevlerin hepsini yaptı.', hwMost: (d, n) => 'Ödevlerinin çoğunu yaptı (' + n + ' ödevden ' + d + ' tanesi).',
+        hwFew: (d, n) => 'Eksik ödevleri var (' + n + ' ödevden ' + d + ' tanesi yapıldı).', open: n => 'Şu an yapılacak ' + n + ' ödevi var.',
+        homeGood: d => 'Evde düzenli çalışıyor (son dört haftada ' + d + ' gün).',
+        homeSome: d => 'Son dört haftada evde ' + d + ' gün çalıştı. Haftada birkaç gün daha çalışırsa çok iyi olur.',
+        homeNone: 'Evde bu sayfada henüz çalışmadı. Günde on dakika yeterlidir.',
+        books: n => 'BookR Next’te ' + n + ' kitap okudu.'
+      }
+    }
+  };
+  const parentLang = () => LS.get('plang') === 'en' ? 'en' : 'tr';
+  // the plain summary: a few sentences made from the same numbers
+  function parentSummary(T, v, p, hw) {
+    const S = T.s, out = [], w = p.weeks;
+    if (!v.xp && !w.some(Boolean)) out.push(S.none);
+    else if (!w[3]) out.push(S.zeroWk);
+    else out.push(w[3] > w[2] ? S.up : w[3] === w[2] ? S.same : S.down);
+    if (hw.n) out.push(hw.d === hw.n ? S.hwAll : hw.d * 2 >= hw.n ? S.hwMost(hw.d, hw.n) : S.hwFew(hw.d, hw.n));
+    if (hw.open) out.push(S.open(hw.open));
+    out.push(p.hd >= 8 ? S.homeGood(p.hd) : p.hd ? S.homeSome(p.hd) : S.homeNone);
+    if (v.books) out.push(S.books(v.books));
+    return out;
+  }
   function pageParent(page, v) {
-    const box = el('article', 'panel parent');
+    const L = parentLang(), T = PL[L];
+    const box = el('article', 'panel parent'); box.lang = L;
     const p = v.par || { weeks: [0, 0, 0, v.wk || 0], hd: 0, hp: 0, hs: 0, picks: 0 };
-    box.append(el('p', 'eyebrow', 'For parents · ' + new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })), el('h2', '', v.n + ' · ' + v.c + ' · English'));
-    box.appendChild(el('p', 'muted', 'ASTROVOYAGERS is the game of our English lessons. Children earn XP when they speak, answer, read and do their homework. Here is how ' + v.n + ' is doing.'));
+    const sw = el('div', 'plang noprint'); sw.setAttribute('role', 'group'); sw.setAttribute('aria-label', 'Language / Dil');
+    ['tr', 'en'].forEach(k => { const b = el('button', 'btn ' + (k === L ? 'btn-gold' : 'btn-ghost'), PL[k].lang); b.type = 'button'; b.dataset.lang = k; b.lang = k; b.setAttribute('aria-pressed', String(k === L)); b.addEventListener('click', () => { LS.set('plang', k); render(); }); sw.appendChild(b); });
+    box.appendChild(sw);
+    box.append(el('p', 'eyebrow', T.eyebrow + ' · ' + new Date().toLocaleDateString(T.locale, { day: 'numeric', month: 'long', year: 'numeric' })), el('h2', '', v.n + ' · ' + v.c + ' · English'));
+    box.appendChild(el('p', 'muted', T.intro(v.n)));
+    box.querySelector('h2').lang = 'en';
+    const hwl = cls ? cls.hw.filter(h => h.checked) : [], done = hwl.filter(h => (v.hwm || {})[h.id] === 'd').length, miss = hwl.filter(h => { const m = (v.hwm || {})[h.id]; return m !== 'd' && m !== 'e'; });
+    const open = cls ? cls.hw.filter(h => !h.checked) : [];
+    const sum = el('div', 'psum'); sum.appendChild(el('h3', '', T.sumH));
+    const sl = el('ul', 'ptips'); parentSummary(T, v, p, { n: hwl.length, d: done, open: open.length }).forEach(t => sl.appendChild(el('li', '', t)));
+    sum.appendChild(sl); box.appendChild(sum);
     const facts = el('div', 'pfacts');
     const fact = (k, val, sub) => { const d = el('div', 'pfact'); d.append(el('span', '', k), el('b', '', val)); if (sub) d.appendChild(el('small', '', sub)); facts.appendChild(d); };
-    fact('Level', String(v.lv), v.xp + ' XP in all');
-    fact('This week', '+' + p.weeks[3] + ' XP', p.weeks[3] > p.weeks[2] ? 'More than last week' : p.weeks[3] === p.weeks[2] ? 'The same as last week' : 'Less than last week');
-    fact('Books read', String(v.books || 0), 'on BookR Next');
-    fact('Badges', String((v.badges || []).length), 'for good work');
+    fact(T.level, String(v.lv), T.lvSub(v.xp));
+    fact(T.week, '+' + p.weeks[3] + ' XP', p.weeks[3] > p.weeks[2] ? T.more : p.weeks[3] === p.weeks[2] ? T.same : T.less);
+    fact(T.books, String(v.books || 0), T.booksSub);
+    fact(T.badges, String((v.badges || []).length), T.badgesSub);
     box.appendChild(facts);
-    box.appendChild(el('h3', '', 'XP in the last four weeks'));
+    box.appendChild(el('p', 'muted small', T.gloss));
+    box.appendChild(el('h3', '', T.chartH));
     const chart = el('div', 'pweeks'), top = Math.max(1, ...p.weeks);
-    p.weeks.forEach((x, i) => { const c = el('div', 'pweek'), b = el('i'); b.style.height = Math.max(4, Math.round(100 * x / top)) + '%'; c.append(el('b', '', '+' + x), b, el('span', '', i === 3 ? 'This week' : i === 2 ? 'Last week' : (3 - i) + ' weeks ago')); chart.appendChild(c); });
+    p.weeks.forEach((x, i) => { const c = el('div', 'pweek'), b = el('i'); b.style.height = Math.max(4, Math.round(100 * x / top)) + '%'; c.append(el('b', '', '+' + x), b, el('span', '', T.wkLbl(i))); chart.appendChild(c); });
     box.appendChild(chart);
-    box.appendChild(el('h3', '', 'Homework'));
-    const hwl = cls ? cls.hw.filter(h => h.checked) : [], done = hwl.filter(h => (v.hwm || {})[h.id] === 'd').length, miss = hwl.filter(h => { const m = (v.hwm || {})[h.id]; return m !== 'd' && m !== 'e'; });
-    box.appendChild(el('p', '', hwl.length ? done + ' of the last ' + plural(hwl.length, 'checked task') + ' done.' + (miss.length ? ' Not done: ' + miss.slice(0, 4).map(h => h.title).join('; ') + '.' : ' Nothing is missing.') : 'No checked homework yet.'));
-    const open = cls ? cls.hw.filter(h => !h.checked) : [];
-    if (open.length) box.appendChild(el('p', '', 'To do now: ' + open.map(h => h.title + ' (due ' + niceDay(h.due) + ')').join('; ') + '.'));
-    box.appendChild(el('h3', '', 'Work at home in the last four weeks'));
-    box.appendChild(el('p', '', p.hd ? 'Practised on ' + plural(p.hd, 'day') + ': ' + plural(p.hp, 'right answer') + ' and ' + plural(p.hs, 'sentence') + ' spoken aloud.' : 'No practice at home yet. Ten minutes a day on this page is enough.'));
-    box.appendChild(el('h3', '', 'How you can help'));
+    box.appendChild(el('h3', '', T.hwH));
+    box.appendChild(el('p', '', hwl.length ? T.hwLine(done, hwl.length, miss.slice(0, 4).map(h => h.title)) : T.hwNone));
+    const day = d => { const [y, m, dd] = String(d).split('-').map(Number); return new Date(y, m - 1, dd).toLocaleDateString(T.locale, { weekday: 'short', day: 'numeric', month: 'short' }); };
+    if (open.length) box.appendChild(el('p', '', T.todo(open.map(h => h.title + ' (' + T.due(day(h.due)) + ')'))));
+    box.appendChild(el('h3', '', T.homeH));
+    box.appendChild(el('p', '', p.hd ? T.homeLine(p.hd, p.hp, p.hs) : T.homeNone));
+    box.appendChild(el('h3', '', T.helpH));
     const ul = el('ul', 'ptips');
-    ['Ask your child to open this page for ten minutes a day: Practice and Captain.', 'Listen to one BookR book together each week.', 'Ask "What did you learn in English today?" Any answer in English is a success.'].forEach(t => ul.appendChild(el('li', '', t)));
+    T.tips.forEach(t => ul.appendChild(el('li', '', t)));
     box.appendChild(ul);
-    const row = el('div', 'acts noprint'), pr = el('button', 'btn btn-gold', 'Print'), bk = el('button', 'btn btn-ghost', 'Back');
+    const row = el('div', 'acts noprint'), pr = el('button', 'btn btn-gold', T.print), bk = el('button', 'btn btn-ghost', T.back);
     pr.type = bk.type = 'button'; pr.addEventListener('click', () => window.print()); bk.addEventListener('click', () => { tab = 'home'; render(); });
     row.append(pr, bk); box.appendChild(row);
-    box.appendChild(el('p', 'muted small', 'Mr. Şekerci · This page shows only your own child. Updated ' + ago(rec.at) + '.'));
+    box.appendChild(el('p', 'muted small', T.foot(T.ago(rec.at))));
     page.appendChild(box);
   }
 
