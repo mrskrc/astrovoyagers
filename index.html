@@ -16,7 +16,13 @@
   <!-- signing in with the code on the voyager's card -->
   <main class="signin" id="signin">
     <div class="signin-card">
-      <p class="logo">ASTROVOYAGERS</p>
+      <div class="brand-top">
+        <img class="brand-logo" src="icons/logo.png" width="44" height="44" alt="Özel Manisa Ülkem Koleji">
+        <div>
+          <p class="logo brand-word">ASTROVOYAGERS</p>
+          <p class="brand-school" lang="tr">Özel Manisa Ülkem Koleji</p>
+        </div>
+      </div>
       <canvas class="px zib" id="zib" width="26" height="30"></canvas>
       <p class="bubble" id="hello">Hello, voyager! Type your secret code.</p>
       <form id="codeForm" autocomplete="off" style="display:grid;gap:12px;width:100%">
@@ -27,11 +33,19 @@
       </form>
       <p class="msg" id="signMsg" role="status"></p>
       <p class="muted small" id="noScript" hidden>Open this page with the link or the QR code from your teacher.</p>
+      <p class="credit">Developed by Mr. Şekerci</p>
     </div>
   </main>
 
   <!-- the voyager's page -->
   <div class="wrap" id="app" hidden>
+    <div class="brand-top">
+      <img class="brand-logo" src="icons/logo.png" width="44" height="44" alt="Özel Manisa Ülkem Koleji">
+      <div>
+        <p class="logo brand-word">ASTROVOYAGERS</p>
+        <p class="brand-school" lang="tr">Özel Manisa Ülkem Koleji</p>
+      </div>
+    </div>
     <header class="me">
       <div class="me-art" id="meArt"></div>
       <div class="me-tx">
@@ -48,6 +62,7 @@
     </header>
     <nav class="tabs" role="tablist" aria-label="My page" id="tabs"></nav>
     <section class="page" id="page"></section>
+    <p class="credit">Developed by Mr. Şekerci</p>
   </div>
 
   <dialog class="sheet" id="sheet" aria-labelledby="shName"></dialog>

@@ -353,3 +353,11 @@ dialog.sheet::backdrop { background: rgba(3, 5, 16, 0.7); backdrop-filter: blur(
   .tab { letter-spacing: 0; font-size: clamp(7.5px, 2.4vw, 9.6px); }
   .tab span { max-width: 100%; white-space: nowrap; }
 }
+
+/* the school's logo and name at the top, the credit at the bottom (as on the boards) */
+.brand-top { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 0 0 14px; text-align: left; }
+.brand-logo { width: 44px; height: 44px; border-radius: 10px; flex: none; }
+.brand-word { font-size: 1.15rem; line-height: 1.1; }
+.brand-school { margin: 2px 0 0; font-size: 0.8rem; color: var(--muted); }
+.credit { margin: 22px 0 0; text-align: center; font-size: 0.72rem; letter-spacing: 0.04em; color: var(--muted); opacity: 0.6; }
+@media print { .brand-top, .credit { display: none; } }

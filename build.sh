@@ -8,5 +8,5 @@ for f in creatures.js lore.js shopdata.js shopmore.js shopart.js portalkit.js bo
 cp "$EXT"/books/*.js shared/books/
 cp "$EXT/voicekey.js" "$EXT/voice.js" .        # the recorded voice: source in the extension (the boards use it too)
 cp "$EXT"/fonts/*.woff2 fonts/
-cp "$EXT"/icons/icon16.png "$EXT"/icons/icon32.png "$EXT"/icons/icon48.png "$EXT"/icons/icon128.png icons/
+cp "$EXT"/icons/icon16.png "$EXT"/icons/icon32.png "$EXT"/icons/icon48.png "$EXT"/icons/icon128.png "$EXT"/icons/logo.png icons/
 echo "shared files copied"
