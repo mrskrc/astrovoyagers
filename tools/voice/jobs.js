@@ -18,6 +18,16 @@ B.books().forEach(b => b.units.forEach(u => u.q.forEach(q => {
   if (q[2].split(' ').length <= 3) add(q[2], 'word', ox ? 2 : 3);
   add(q[1].replace('___', q[2]), 'sent', ox ? 2 : 4);
 })));
+// the class boards (7.14 plays these recordings too): the full sentence "Hear it" says after a grammar,
+// dialogue, error or order question (one recording per dialogue line), and the phrase of the day
+B.books().forEach(b => b.units.forEach(u => u.q.forEach((x, i) => {
+  const q = B.question(u, i);
+  if (x[0] === 'x') { x[1].split('|').forEach(w => add(w.trim().replace(/[.!?]+$/, ''), 'word', 5)); return; }   // odd one out: said word by word
+  if (!q || !q.full || q.t === 'v') return;   // vocabulary: above
+  String(q.full).split('\n').forEach(l => add(l.replace(/^[AB]:\s*/, ''), q.t === 'd' ? 'dline' : 'gsent', 5));
+})));
+const PH = require('path').join(SITE, '..', 'sinif-paneli', 'phrases.js');
+if (fs.existsSync(PH)) { require(PH); self.CQPhrases.list.forEach(p => { add(p.phrase, 'phrase', 5); add(p.example, 'example', 5); }); }
 const list = [...items.values()].sort((a, b) => a.pr - b.pr);
 const stories = self.AVStories.map(s => ({ id: s.id, title: s.title, text: s.text }));
 fs.writeFileSync(process.argv[3], JSON.stringify({ stories, items: list }));

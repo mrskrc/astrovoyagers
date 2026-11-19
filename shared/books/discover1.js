@@ -379,7 +379,7 @@
       ["e","We [have known] [each other] [for] [2015].","for","since"],
       ["e","She [has] [never] [ate] [sushi].","ate","eaten"],
       ["e","[Have] [he] [joined] [the club]?","Have","Has"],
-      ["e","[When] [have] [you] [joined] the club?","have","did"],
+      ["e","[When] [did] [you] [joined] the club?","joined","join"],
       ["e","I [have] [been] [a member] [since two years].","since two years","for two years"],
       ["e","I'm [unable] [to] [coming] [to the meeting].","coming","come"],
       ["d","A: Have you finished your homework yet?\nB: ___","Yes, I've just finished it.","Yes, I just finish it.|Yes, I finished it tomorrow.|No, I've already finished."],
